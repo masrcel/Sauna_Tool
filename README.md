@@ -44,12 +44,7 @@ npm run dev                 # läuft auf :5173
 ## Produktion (Docker Compose)
 
 ```bash
-# .env anlegen
-echo "JWT_SECRET=dein-geheimer-schluessel" > .env
-echo "ADMIN_PASSWORD=sicheres-passwort" >> .env
-echo "DOMAIN=sauna.example.de" >> .env
-echo "LETSENCRYPT_EMAIL=admin@example.de" >> .env
-
+cp .env.example .env        # Werte anpassen (JWT_SECRET, ADMIN_PASSWORD, DOMAIN, LETSENCRYPT_EMAIL)
 docker compose up -d --build
 ```
 
