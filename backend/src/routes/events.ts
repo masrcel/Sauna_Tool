@@ -1,0 +1,207 @@
+import { Router } from 'express';
+import { query, queryOne } from '../db/client';
+import { requireAuth, AuthRequest } from '../middleware/auth';
+
+const router = Router();
+
+async function checkConflicts(
+  date: string,
+  saunaId: string,
+  userId: string | null,
+  startTime: string,
+  endTime: string | null,
+  excludeId = '00000000-0000-0000-0000-000000000000'
+): Promise<string | null> {
+  const saunaHits = await query(`
+    SELECT TO_CHAR(s.start_time, 'HH24:MI') as start_time,
+           TO_CHAR(COALESCE(s.end_time, s.start_time + interval '15 minutes'), 'HH24:MI') as end_time,
+           TO_CHAR(COALESCE(s.end_time, s.start_time + interval '15 minutes') + (sa.break_minutes || ' minutes')::interval, 'HH24:MI') as free_at,
+           sa.break_minutes,
+           COALESCE(s.custom_name, t.name, 'Aufguss') as name
+    FROM aufguss_schedule s
+    JOIN events e ON s.event_id = e.id
+    JOIN saunas sa ON s.sauna_id = sa.id
+    LEFT JOIN aufguss_templates t ON s.template_id = t.id
+    WHERE e.event_date = $1
+      AND s.id != $2
+      AND s.sauna_id = $3
+      AND s.status != 'abgesagt'
+      AND $4::time < COALESCE(s.end_time, s.start_time + interval '15 minutes') + (sa.break_minutes || ' minutes')::interval
+      AND s.start_time < COALESCE($5::time, $4::time + interval '15 minutes') + (sa.break_minutes || ' minutes')::interval
+  `, [date, excludeId, saunaId, startTime, endTime]);
+  if (saunaHits.length > 0) {
+    const c = saunaHits[0] as any;
+    const breakHint = c.break_minutes > 0 ? ` + ${c.break_minutes} Min. Pause – frei ab ${c.free_at} Uhr` : '';
+    return `Zeitkonflikt Sauna: "${c.name}" läuft von ${c.start_time} bis ${c.end_time} Uhr${breakHint}.`;
+  }
+
+  if (userId) {
+    const staffHits = await query(`
+      SELECT TO_CHAR(s.start_time, 'HH24:MI') as start_time,
+             TO_CHAR(COALESCE(s.end_time, s.start_time + interval '15 minutes'), 'HH24:MI') as end_time,
+             sa.name as sauna_name,
+             COALESCE(s.custom_name, t.name, 'Aufguss') as name
+      FROM aufguss_schedule s
+      JOIN events e ON s.event_id = e.id
+      JOIN saunas sa ON s.sauna_id = sa.id
+      LEFT JOIN aufguss_templates t ON s.template_id = t.id
+      WHERE e.event_date = $1
+        AND s.id != $2
+        AND s.assigned_user_id = $3
+        AND s.status != 'abgesagt'
+        AND $4::time < COALESCE(s.end_time, s.start_time + interval '15 minutes')
+        AND s.start_time < COALESCE($5::time, $4::time + interval '15 minutes')
+    `, [date, excludeId, userId, startTime, endTime]);
+    if (staffHits.length > 0) {
+      const c = staffHits[0] as any;
+      return `Mitarbeiter-Konflikt: Diese Person leitet "${c.name}" in ${c.sauna_name} von ${c.start_time} bis ${c.end_time} Uhr.`;
+    }
+  }
+
+  return null;
+}
+
+// Tages-Event abrufen oder anlegen
+router.get('/:date', async (req, res, next) => {
+  try {
+  const event = await queryOne<any>('SELECT * FROM events WHERE event_date=$1', [req.params.date]);
+  if (!event) { res.status(404).json(null); return; }
+
+  const schedule = await query(`
+    SELECT
+      s.id, s.sauna_id, s.template_id, s.assigned_user_id,
+      s.custom_name, s.custom_subtitle, s.start_time, s.end_time,
+      s.status, s.sort_order,
+      sa.name as sauna_name,
+      t.name as template_name, t.subtitle as template_subtitle,
+      t.duration_minutes,
+      u.name as staff_name, u.avatar_url as staff_avatar,
+      (SELECT COALESCE(json_agg(
+        json_build_object('scent_id', sc.id, 'scent_name', sc.name, 'dosage_ml', ts.dosage_ml, 'dosage_note', ts.dosage_note, 'color', sc.color)
+        ORDER BY ts.sort_order
+      ), '[]')
+      FROM template_scents ts
+      JOIN scents sc ON ts.scent_id = sc.id
+      WHERE ts.template_id = s.template_id) as template_scents,
+      (SELECT COALESCE(json_agg(
+        json_build_object('scent_id', sc.id, 'scent_name', sc.name, 'dosage_ml', ss.dosage_ml, 'dosage_note', ss.dosage_note, 'color', sc.color)
+        ORDER BY ss.sort_order
+      ), '[]')
+      FROM schedule_scents ss
+      JOIN scents sc ON ss.scent_id = sc.id
+      WHERE ss.schedule_id = s.id) as schedule_scents
+    FROM aufguss_schedule s
+    JOIN saunas sa ON s.sauna_id = sa.id
+    LEFT JOIN aufguss_templates t ON s.template_id = t.id
+    LEFT JOIN users u ON s.assigned_user_id = u.id
+    WHERE s.event_id = $1
+    ORDER BY s.start_time, s.sort_order
+  `, [event.id]);
+
+  // Merge template_scents und schedule_scents (schedule_scents überschreiben template_scents wenn vorhanden)
+  const mergedSchedule = schedule.map((entry: any) => ({
+    ...entry,
+    scents: entry.schedule_scents.length > 0 ? entry.schedule_scents : entry.template_scents,
+  }));
+
+  res.json({ ...event, schedule: mergedSchedule });
+  } catch (err) { next(err); }
+});
+
+router.post('/', requireAuth, async (req: AuthRequest, res) => {
+  const { event_date, title, notes } = req.body;
+  const event = await queryOne(
+    'INSERT INTO events (event_date, title, notes, created_by) VALUES ($1,$2,$3,$4) ON CONFLICT (event_date) DO UPDATE SET title=EXCLUDED.title, notes=EXCLUDED.notes RETURNING *',
+    [event_date, title, notes, req.user!.id]
+  );
+  res.status(201).json(event);
+});
+
+// Aufguss zum Plan hinzufügen
+router.post('/:date/schedule', requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    const { sauna_id, template_id, assigned_user_id, custom_name, custom_subtitle, start_time, end_time } = req.body;
+    const conflict = await checkConflicts(req.params.date, sauna_id, assigned_user_id || null, start_time, end_time || null);
+    if (conflict) { res.status(409).json({ error: conflict }); return; }
+    let event = await queryOne<any>('SELECT id FROM events WHERE event_date=$1', [req.params.date]);
+    if (!event) {
+      event = await queryOne('INSERT INTO events (event_date, created_by) VALUES ($1,$2) RETURNING id', [req.params.date, req.user!.id]);
+    }
+    const entry = await queryOne(
+      `INSERT INTO aufguss_schedule (event_id, sauna_id, template_id, assigned_user_id, custom_name, custom_subtitle, start_time, end_time)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+      [event!.id, sauna_id, template_id || null, assigned_user_id || null, custom_name, custom_subtitle, start_time, end_time]
+    );
+    res.status(201).json(entry);
+  } catch (err) { next(err); }
+});
+
+// Aufguss im Plan aktualisieren
+router.put('/:date/schedule/:scheduleId', requireAuth, async (req, res, next) => {
+  try {
+    const { sauna_id, template_id, assigned_user_id, custom_name, custom_subtitle, start_time, end_time, status } = req.body;
+    if (!start_time) { res.status(400).json({ error: 'Startzeit ist erforderlich' }); return; }
+    const conflict = await checkConflicts(req.params.date, sauna_id, assigned_user_id || null, start_time, end_time || null, req.params.scheduleId);
+    if (conflict) { res.status(409).json({ error: conflict }); return; }
+    const entry = await queryOne(
+      `UPDATE aufguss_schedule SET sauna_id=$1, template_id=$2, assigned_user_id=$3, custom_name=$4,
+       custom_subtitle=$5, start_time=$6, end_time=$7, status=$8 WHERE id=$9 RETURNING *`,
+      [sauna_id, template_id || null, assigned_user_id || null, custom_name || null, custom_subtitle || null, start_time, end_time || null, status ?? 'geplant', req.params.scheduleId]
+    );
+    if (!entry) { res.status(404).json({ error: 'Aufguss nicht gefunden' }); return; }
+    res.json(entry);
+  } catch (err) { next(err); }
+});
+
+router.delete('/:date/schedule/:scheduleId', requireAuth, async (req, res) => {
+  await query('DELETE FROM aufguss_schedule WHERE id=$1', [req.params.scheduleId]);
+  res.json({ ok: true });
+});
+
+// Aktuelle Düfte eines Aufgusses abrufen (schedule_scents > template_scents)
+router.get('/:date/schedule/:scheduleId/scents', requireAuth, async (req, res, next) => {
+  try {
+    const scheduleScents = await query(`
+      SELECT ss.id, ss.scent_id, sc.name as scent_name, ss.dosage_ml, ss.dosage_note, sc.color, ss.sort_order
+      FROM schedule_scents ss
+      JOIN scents sc ON ss.scent_id = sc.id
+      WHERE ss.schedule_id = $1
+      ORDER BY ss.sort_order
+    `, [req.params.scheduleId]);
+
+    if (scheduleScents.length > 0) {
+      res.json(scheduleScents);
+      return;
+    }
+
+    // Fallback: Düfte aus der verknüpften Vorlage
+    const templateScents = await query(`
+      SELECT ts.id, ts.scent_id, sc.name as scent_name, ts.dosage_ml, ts.dosage_note, sc.color, ts.sort_order
+      FROM aufguss_schedule s
+      JOIN template_scents ts ON ts.template_id = s.template_id
+      JOIN scents sc ON ts.scent_id = sc.id
+      WHERE s.id = $1
+      ORDER BY ts.sort_order
+    `, [req.params.scheduleId]);
+
+    res.json(templateScents);
+  } catch (err) { next(err); }
+});
+
+// Düfte zu einem geplanten Aufguss hinzufügen
+router.post('/:date/schedule/:scheduleId/scents', requireAuth, async (req: AuthRequest, res) => {
+  const { scents } = req.body; // Array of { scent_id, dosage_ml?, dosage_note? }
+  await query('DELETE FROM schedule_scents WHERE schedule_id=$1', [req.params.scheduleId]);
+  if (scents?.length) {
+    for (let i = 0; i < scents.length; i++) {
+      const s = scents[i];
+      await query(
+        'INSERT INTO schedule_scents (schedule_id, scent_id, dosage_ml, dosage_note, sort_order) VALUES ($1,$2,$3,$4,$5)',
+        [req.params.scheduleId, s.scent_id, s.dosage_ml, s.dosage_note, i]
+      );
+    }
+  }
+  res.json({ ok: true });
+});
+
+export default router;
