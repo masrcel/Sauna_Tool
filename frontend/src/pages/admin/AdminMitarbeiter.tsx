@@ -110,7 +110,7 @@ function UserForm({ user, onSubmit, onClose }: { user: User | null; onSubmit: (d
         <h3 className="font-display text-xl font-bold">{user ? 'Mitarbeiter bearbeiten' : 'Neuer Mitarbeiter'}</h3>
         <div><label className="label">Name *</label><input className="input" value={form.name} onChange={e => set('name', e.target.value)} /></div>
         <div><label className="label">E-Mail *</label><input type="email" className="input" value={form.email} onChange={e => set('email', e.target.value)} /></div>
-        <div><label className="label">{user ? 'Neues Passwort (leer = unverändert)' : 'Passwort *'}</label><input type="password" className="input" value={form.password} onChange={e => set('password', e.target.value)} /></div>
+        <div><label className="label">{user ? 'Neues Passwort (leer = unverändert)' : 'Passwort *'}</label><input type="password" className="input" autoComplete="new-password" minLength={10} maxLength={72} value={form.password} onChange={e => set('password', e.target.value)} /><p className="text-xs text-gray-500 dark:text-stone-400 mt-1">Mindestens 10 Zeichen</p></div>
         <div><label className="label">Rolle</label>
           <select className="input" value={form.role} onChange={e => set('role', e.target.value)}>
             <option value="staff">Personal</option>

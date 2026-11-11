@@ -12,8 +12,9 @@ validateParams(router);
 
 const email = z.preprocess(v => (typeof v === 'string' ? v.trim() : v), z.string().min(1).max(255).email());
 const role = z.preprocess(v => (v === '' || v == null ? undefined : v), z.enum(['admin', 'staff']).default('staff'));
-// bcrypt berücksichtigt nur die ersten 72 Byte
-const password = z.string().min(1).max(72);
+// Mindestens 10 Zeichen; bcrypt berücksichtigt nur die ersten 72 Byte
+const MIN_PASSWORD_LENGTH = 10;
+const password = z.string().min(MIN_PASSWORD_LENGTH).max(72);
 
 const createUserSchema = z.object({
   name: text(100),

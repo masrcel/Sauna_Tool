@@ -31,7 +31,7 @@ Zufallswerte für `JWT_SECRET` / `POSTGRES_PASSWORD` erzeugen: `openssl rand -he
 ### Login
 - URL: `https://[DOMAIN]/admin`
 - E-Mail: `admin@sauna.local`
-- Passwort: `ADMIN_PASSWORD` aus der `.env` (wird nur beim allerersten Start gesetzt)
+- Passwort: `ADMIN_PASSWORD` aus der `.env`, mindestens 10 Zeichen (wird nur beim allerersten Start gesetzt)
 
 ### Update einspielen
 ```bash

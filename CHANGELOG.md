@@ -12,6 +12,30 @@ Versionierung nach [Semantic Versioning](https://semver.org/lang/de/):
 
 ---
 
+## [1.6.2] – 2026-11-12
+
+> **Update:** `git pull` und `docker compose up -d --build` genügen. Bei einer **Neuinstallation**
+> muss `ADMIN_PASSWORD` mindestens 10 Zeichen lang sein, sonst bricht die Migration ab.
+
+### Sicherheit
+- Passwörter für Mitarbeiter müssen mindestens 10 Zeichen lang sein (beim Anlegen oder Ändern).
+  Für `ADMIN_PASSWORD` gilt dieselbe Mindestlänge, wenn der Admin zum ersten Mal angelegt wird.
+  Bestehende Passwörter funktionieren weiter.
+- Login-Limit zusätzlich pro Konto (10 Fehlversuche / 15 Min., unabhängig von der IP). Das bremst
+  verteilte Angriffe auf ein einzelnes Konto.
+- Der Login verrät über die Antwortzeit nicht mehr, ob eine E-Mail existiert. Auch bei unbekannter
+  E-Mail läuft jetzt ein bcrypt-Vergleich (gegen einen Dummy-Hash).
+- Abhängigkeiten aktualisiert (`npm audit fix`, Express 4.22.3): behebt u. a. einen DoS über
+  komprimierte Request-Bodys (body-parser) sowie Lücken in qs, proxy-addr, axios,
+  follow-redirects und form-data. Das ungenutzte Paket `uuid` ist entfernt.
+
+### Geändert
+- **Datenschutz (DSGVO):** Die Schriften Inter und Playfair Display werden selbst ausgeliefert
+  (`@fontsource`) statt von Google Fonts geladen. Die Content-Security-Policy erlaubt Styles und
+  Schriften jetzt nur noch vom eigenen Server.
+
+---
+
 ## [1.6.1] – 2026-11-12
 
 > **Update:** `git pull` und `docker compose up -d --build` genügen. Die neue Spalte und Tabelle

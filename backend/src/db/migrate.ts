@@ -3,6 +3,9 @@ import path from 'path';
 import { pool } from './client';
 import bcrypt from 'bcryptjs';
 
+// gleiche Mindestlänge wie für Mitarbeiter-Passwörter (routes/users.ts)
+const MIN_ADMIN_PASSWORD_LENGTH = 10;
+
 async function migrate() {
   const sql = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf-8');
 
@@ -26,15 +29,20 @@ async function migrate() {
     ON CONFLICT (key) DO NOTHING
   `);
 
-  // Admin-User mit echtem Passwort anlegen
-  const adminPassword = process.env.ADMIN_PASSWORD || 'sauna2024';
-  const hash = await bcrypt.hash(adminPassword, 10);
-
-  await pool.query(`
-    INSERT INTO users (name, email, password_hash, role)
-    VALUES ('Admin', 'admin@sauna.local', $1, 'admin')
-    ON CONFLICT (email) DO NOTHING
-  `, [hash]);
+  // Admin-User beim allerersten Start anlegen (ADMIN_PASSWORD mit mindestens 10 Zeichen nötig)
+  const adminExists = await pool.query(`SELECT 1 FROM users WHERE email = 'admin@sauna.local'`);
+  if (adminExists.rowCount === 0) {
+    const adminPassword = process.env.ADMIN_PASSWORD ?? '';
+    if (adminPassword.length < MIN_ADMIN_PASSWORD_LENGTH) {
+      throw new Error(`ADMIN_PASSWORD muss mindestens ${MIN_ADMIN_PASSWORD_LENGTH} Zeichen lang sein`);
+    }
+    const hash = await bcrypt.hash(adminPassword, 10);
+    await pool.query(`
+      INSERT INTO users (name, email, password_hash, role)
+      VALUES ('Admin', 'admin@sauna.local', $1, 'admin')
+      ON CONFLICT (email) DO NOTHING
+    `, [hash]);
+  }
 
   console.log('Migration erfolgreich.');
   console.log('Admin-Login: admin@sauna.local (Passwort aus ADMIN_PASSWORD)');

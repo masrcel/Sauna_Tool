@@ -23,6 +23,22 @@ export const CHANGE_TYPE_LABELS: Record<ChangeType, string> = {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '1.6.2',
+    date: '2026-11-12',
+    title: 'Stärkere Passwörter & Datenschutz',
+    changes: {
+      security: [
+        'Passwörter müssen jetzt mindestens 10 Zeichen lang sein (beim Anlegen oder Ändern). Bestehende Passwörter funktionieren weiter.',
+        'Login-Schutz zusätzlich pro Konto: Nach 10 Fehlversuchen in 15 Minuten ist das Konto kurz gesperrt, egal von welchem Gerät die Versuche kommen.',
+        'Der Login verrät über die Antwortzeit nicht mehr, ob eine E-Mail-Adresse registriert ist.',
+        'Abhängigkeiten mit bekannten Sicherheitslücken aktualisiert (u. a. Express/body-parser).',
+      ],
+      changed: [
+        'Datenschutz: Die Schriften werden vom eigenen Server geladen statt von Google Fonts. Es werden keine Besucher-IP-Adressen mehr an Google übertragen.',
+      ],
+    },
+  },
+  {
     version: '1.6.1',
     date: '2026-11-12',
     title: 'Sichereres Abmelden',
