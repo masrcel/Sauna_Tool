@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -25,7 +26,13 @@ export default function StaffDisplay() {
   const dateStr = format(now, 'yyyy-MM-dd');
   const { data: event, isLoading } = useTodayEvent(dateStr);
 
-  const activeSchedule = event?.schedule.filter(e => e.status !== 'abgesagt') ?? [];
+  const [showDone, setShowDone] = useState(true);
+
+  const activeSchedule = event?.schedule.filter(e => e.status !== 'abgesagt' && e.status !== 'fertig') ?? [];
+  // Abgeschlossene Aufgüsse – zuletzt beendete zuerst
+  const doneSchedule = (event?.schedule.filter(e => e.status === 'fertig') ?? [])
+    .slice()
+    .sort((a, b) => b.start_time.localeCompare(a.start_time));
 
   const byStaff = activeSchedule.reduce<Record<string, typeof activeSchedule>>((acc, e) => {
     const key = e.assigned_user_id ?? '__unassigned__';
@@ -121,8 +128,6 @@ export default function StaffDisplay() {
                               'rounded-xl p-3 flex flex-col gap-2 transition-all',
                               entry.status === 'läuft'
                                 ? 'bg-green-50 border border-green-400 dark:bg-green-900/50 dark:border-green-600'
-                                : entry.status === 'fertig'
-                                ? 'bg-gray-100/50 dark:bg-stone-800/50 opacity-50'
                                 : 'bg-gray-100 dark:bg-stone-800'
                             )}
                           >
@@ -156,11 +161,38 @@ export default function StaffDisplay() {
             <section>
               <h2 className="text-steam-400 text-xs uppercase tracking-widest mb-4">Vollständiger Tagesplan</h2>
               <div className="grid grid-cols-1 gap-3">
-                {activeSchedule.map(entry => (
+                {activeSchedule.length === 0 ? (
+                  <p className="text-gray-400 dark:text-stone-500 text-sm">Alle Aufgüsse für heute sind abgeschlossen.</p>
+                ) : activeSchedule.map(entry => (
                   <AufgussCard key={entry.id} entry={entry} showDetails compact />
                 ))}
               </div>
             </section>
+
+            {/* Abgeschlossene Aufgüsse */}
+            {doneSchedule.length > 0 && (
+              <section className="border-t border-gray-200 dark:border-stone-800 pt-6">
+                <button
+                  type="button"
+                  onClick={() => setShowDone(v => !v)}
+                  className="w-full flex items-center justify-between mb-4 text-left"
+                >
+                  <h2 className="text-steam-400 text-xs uppercase tracking-widest">
+                    Abgeschlossene Aufgüsse ({doneSchedule.length})
+                  </h2>
+                  <span className="text-gray-400 dark:text-stone-500 text-sm">
+                    {showDone ? 'Ausblenden ▲' : 'Anzeigen ▼'}
+                  </span>
+                </button>
+                {showDone && (
+                  <div className="grid grid-cols-1 gap-3">
+                    {doneSchedule.map(entry => (
+                      <AufgussCard key={entry.id} entry={entry} showDetails compact />
+                    ))}
+                  </div>
+                )}
+              </section>
+            )}
           </div>
         )}
       </main>
