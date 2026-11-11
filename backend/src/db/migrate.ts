@@ -14,6 +14,8 @@ async function migrate() {
   await pool.query(`ALTER TABLE saunas ADD COLUMN IF NOT EXISTS break_minutes INT NOT NULL DEFAULT 0`);
   // wird beim Bearbeiten von Mitarbeitern gesetzt, fehlte bisher im Schema
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`);
+  // Token-Widerruf: Erhöhen macht alle bisherigen Tokens eines Benutzers ungültig (z. B. Passwortänderung)
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS token_version INT NOT NULL DEFAULT 0`);
 
   // App-Einstellungen Standardwerte
   await pool.query(`

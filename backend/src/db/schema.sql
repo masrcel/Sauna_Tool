@@ -11,8 +11,15 @@ CREATE TABLE IF NOT EXISTS users (
   role VARCHAR(20) NOT NULL DEFAULT 'staff', -- 'admin' | 'staff'
   avatar_url VARCHAR(500),
   active BOOLEAN NOT NULL DEFAULT true,
+  token_version INT NOT NULL DEFAULT 0, -- erhöhen = alle Tokens des Benutzers ungültig
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Beim Abmelden widerrufene Tokens (nur bis zu ihrem Ablauf aufbewahrt)
+CREATE TABLE IF NOT EXISTS revoked_tokens (
+  jti TEXT PRIMARY KEY,
+  expires_at TIMESTAMPTZ NOT NULL
 );
 
 -- Saunen

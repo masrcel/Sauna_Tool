@@ -11,8 +11,9 @@ api.interceptors.request.use(cfg => {
 api.interceptors.response.use(
   r => r,
   err => {
-    const isLoginRequest = err.config?.url === '/auth/login';
-    if (err.response?.status === 401 && !isLoginRequest) {
+    const url = err.config?.url;
+    const isAuthRequest = url === '/auth/login' || url === '/auth/logout';
+    if (err.response?.status === 401 && !isAuthRequest) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       if (window.location.pathname !== '/admin/login') {

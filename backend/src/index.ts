@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 
 import { runAutoStatus } from './jobs/autoStatus';
 import { errorHandler } from './lib/errors';
+import { cleanupRevokedTokens } from './middleware/auth';
 import authRoutes from './routes/auth';
 import userRoutes from './routes/users';
 import saunaRoutes from './routes/saunas';
@@ -43,6 +44,9 @@ app.get('/health', (_, res) => res.json({ status: 'ok' }));
 // Auto-Status Job: läuft jede Minute
 runAutoStatus().catch(console.error);
 setInterval(() => runAutoStatus().catch(console.error), 60_000);
+
+// Abgelaufene widerrufene Tokens stündlich löschen
+setInterval(() => cleanupRevokedTokens().catch(console.error), 60 * 60_000);
 
 // Unbekannte API-Routen
 app.use('/api', (_req, res) => { res.status(404).json({ error: 'Nicht gefunden' }); });

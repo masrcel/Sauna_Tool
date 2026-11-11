@@ -3,7 +3,7 @@ import multer from 'multer';
 import path from 'path';
 import { z } from 'zod';
 import { query, queryOne } from '../db/client';
-import { requireAdmin, requireAuth, isAdmin, AuthRequest } from '../middleware/auth';
+import { requireAdmin, requireAuth, isAdmin, signToken, AuthRequest } from '../middleware/auth';
 import { createRouter, HttpError } from '../lib/errors';
 import { parse, validateParams, text, boolWithDefault } from '../lib/validation';
 
@@ -83,16 +83,24 @@ router.post('/', requireAdmin, async (req: AuthRequest, res) => {
 router.put('/:id', requireAdmin, async (req: AuthRequest, res) => {
   const { name, email, role, active, password } = parse(updateUserSchema, req.body);
   const { id } = req.params;
-  const user = await queryOne(
-    'UPDATE users SET name=$1, email=$2, role=$3, active=$4, updated_at=NOW() WHERE id=$5 RETURNING id, name, email, role, avatar_url, active',
-    [name, email, role, active, id]
+  const hash = password ? await bcrypt.hash(password, 10) : null;
+  // Neues Passwort oder Deaktivierung: alle bestehenden Sitzungen des Mitarbeiters beenden
+  const revoke = !!hash || !active;
+  const user = await queryOne<any>(
+    `UPDATE users SET name=$1, email=$2, role=$3, active=$4, updated_at=NOW(),
+       password_hash = COALESCE($6, password_hash),
+       token_version = token_version + CASE WHEN $7 THEN 1 ELSE 0 END
+     WHERE id=$5 RETURNING id, name, email, role, avatar_url, active, token_version`,
+    [name, email, role, active, id, hash, revoke]
   );
   if (!user) throw new HttpError(404, 'Mitarbeiter nicht gefunden');
-  if (password) {
-    const hash = await bcrypt.hash(password, 10);
-    await query('UPDATE users SET password_hash=$1 WHERE id=$2', [hash, id]);
+  const { token_version, ...result } = user;
+  // Eigenes Passwort geändert: dieses Gerät bekommt ein neues Token und bleibt angemeldet
+  if (revoke && active && id === req.user!.id) {
+    res.json({ ...result, token: signToken({ id, token_version }) });
+    return;
   }
-  res.json(user);
+  res.json(result);
 });
 
 // Eigenes Profilfoto: jeder; fremde Profilfotos: nur Admins (Prüfung vor dem Upload)
@@ -112,7 +120,8 @@ router.post('/:id/avatar', requireAuth, canEditAvatar, avatarUpload, async (req:
 });
 
 router.delete('/:id', requireAdmin, async (req, res) => {
-  await query('UPDATE users SET active=false WHERE id=$1', [req.params.id]);
+  // Deaktivieren beendet auch alle Sitzungen (alte Tokens bleiben ungültig, falls später reaktiviert)
+  await query('UPDATE users SET active=false, token_version = token_version + 1 WHERE id=$1', [req.params.id]);
   res.json({ ok: true });
 });
 

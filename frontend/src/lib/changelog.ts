@@ -23,6 +23,19 @@ export const CHANGE_TYPE_LABELS: Record<ChangeType, string> = {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '1.6.1',
+    date: '2026-11-12',
+    title: 'Sichereres Abmelden',
+    note: 'Nach dem Update muss sich jeder einmal neu anmelden.',
+    changes: {
+      security: [
+        'Abmelden beendet die Anmeldung jetzt auch auf dem Server, nicht nur im Browser.',
+        'Neues Passwort oder Deaktivieren meldet einen Mitarbeiter auf allen Geräten ab. Wer das eigene Passwort ändert, bleibt auf dem aktuellen Gerät angemeldet.',
+        'Der Webserver sendet zusätzliche Sicherheits-Header (u. a. Content-Security-Policy). Das schützt besser vor eingeschleustem Code und verhindert das Einbetten in fremde Seiten.',
+      ],
+    },
+  },
+  {
     version: '1.6.0',
     date: '2026-11-11',
     title: '„Mir zuweisen“ & sicherer Login',

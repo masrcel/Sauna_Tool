@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
+import { setToken } from '../../lib/auth';
 import { User } from '../../types';
 import Avatar from '../../components/Avatar';
 import { Plus, Upload, Pencil, UserX } from 'lucide-react';
@@ -18,7 +19,10 @@ export default function AdminMitarbeiter() {
   });
 
   const addMutation = useMutation({ mutationFn: (d: any) => api.post('/users', d), onSuccess: () => { qc.invalidateQueries({ queryKey: ['users'] }); setShowForm(false); } });
-  const updateMutation = useMutation({ mutationFn: ({ id, ...d }: any) => api.put(`/users/${id}`, d), onSuccess: () => { qc.invalidateQueries({ queryKey: ['users'] }); setEditUser(null); } });
+  const updateMutation = useMutation({ mutationFn: ({ id, ...d }: any) => api.put(`/users/${id}`, d), onSuccess: res => {
+    // Eigenes Passwort geändert: alte Tokens sind ungültig, Server schickt ein neues
+    if (res.data?.token) setToken(res.data.token);
+    qc.invalidateQueries({ queryKey: ['users'] }); setEditUser(null); } });
   const deactivateMutation = useMutation({ mutationFn: (id: string) => api.delete(`/users/${id}`), onSuccess: () => qc.invalidateQueries({ queryKey: ['users'] }) });
 
   return (

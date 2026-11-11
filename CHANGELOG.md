@@ -12,6 +12,24 @@ Versionierung nach [Semantic Versioning](https://semver.org/lang/de/):
 
 ---
 
+## [1.6.1] – 2026-11-12
+
+> **Update:** `git pull` und `docker compose up -d --build` genügen. Die neue Spalte und Tabelle
+> legt die Migration beim Start automatisch an. **Alle Benutzer müssen sich danach einmal neu
+> anmelden** (alte Anmeldungen werden nicht mehr akzeptiert).
+
+### Behoben
+- **Sicherheit:** Abmelden hat die Anmeldung nur im Browser gelöscht. Jetzt wird sie auch auf dem
+  Server ungültig.
+- **Sicherheit:** Nach einer Passwortänderung blieben alte Anmeldungen bis zu 7 Tage gültig. Neues
+  Passwort oder Deaktivieren meldet den Mitarbeiter jetzt auf allen Geräten ab. Wer das eigene
+  Passwort ändert, bleibt auf dem aktuellen Gerät angemeldet.
+- **Sicherheit:** Der Webserver sendet jetzt Sicherheits-Header (Content-Security-Policy,
+  `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`). Eingeschleuster Code kann so
+  keine fremden Skripte laden, und die App lässt sich nicht in fremde Seiten einbetten.
+
+---
+
 ## [1.6.0] – 2026-11-11
 
 > **Update:** `git pull` und `docker compose up -d --build` genügen. Neue Pakete werden beim

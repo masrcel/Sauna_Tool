@@ -7,7 +7,7 @@ Digitales Aufguss-Planungssystem für Saunen. Drei Ansichten:
 
 Aktuelle Version: **1.5.0** · Optimiert für Monitor, Tablet und Handy.
 
-Live: **https://kropp.sauna-aufgussplan.de**
+Live: **https://demo.sauna-aufgussplan.de**
 
 ---
 

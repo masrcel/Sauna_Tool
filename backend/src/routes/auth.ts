@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { queryOne } from '../db/client';
-import { signToken, requireAuth, AuthRequest } from '../middleware/auth';
+import { signToken, requireAuth, revokeToken, AuthRequest } from '../middleware/auth';
 import { loginLimiter } from '../middleware/rateLimit';
 import { createRouter } from '../lib/errors';
 import '../lib/validation'; // deutsche Fehlermeldungen für zod
@@ -30,13 +30,19 @@ router.post('/login', loginLimiter, async (req, res) => {
     res.status(401).json({ error: 'Ungültige Anmeldedaten' });
     return;
   }
-  const token = signToken({ id: user.id, email: user.email, role: user.role, name: user.name });
+  const token = signToken(user);
   res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role, avatar_url: user.avatar_url } });
 });
 
 router.get('/me', requireAuth, async (req: AuthRequest, res) => {
   const user = await queryOne<any>('SELECT id, name, email, role, avatar_url FROM users WHERE id = $1', [req.user!.id]);
   res.json(user);
+});
+
+// Abmelden: widerruft das aktuelle Token serverseitig (nur dieses Gerät)
+router.post('/logout', requireAuth, async (req: AuthRequest, res) => {
+  await revokeToken(req.token!);
+  res.json({ ok: true });
 });
 
 export default router;

@@ -1,6 +1,6 @@
 import { User } from '../types';
 import { api } from '../lib/api';
-import { setToken, clearToken, getStoredUser, setStoredUser, clearUser, subscribeUser } from '../lib/auth';
+import { getToken, setToken, clearToken, getStoredUser, setStoredUser, clearUser, subscribeUser } from '../lib/auth';
 import { useState, useCallback, useSyncExternalStore } from 'react';
 
 export function useAuth() {
@@ -19,6 +19,12 @@ export function useAuth() {
   }, []);
 
   const logout = useCallback(() => {
+    // Token serverseitig widerrufen. Header explizit setzen, weil das Token gleich
+    // lokal gelöscht wird; Fehler ignorieren – lokal abgemeldet wird in jedem Fall.
+    const token = getToken();
+    if (token) {
+      api.post('/auth/logout', null, { headers: { Authorization: `Bearer ${token}` } }).catch(() => {});
+    }
     clearToken();
     clearUser();
   }, []);
