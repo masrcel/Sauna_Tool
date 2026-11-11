@@ -20,7 +20,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:-bitte-aendern-im-produktivbetrieb}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-sauna2024}
       PORT: 3001
-      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      FRONTEND_URL: ${FRONTEND_URL:-https://${DOMAIN:-localhost}}
       TZ: ${TZ:-Europe/Berlin}
     volumes:
       - uploads:/app/uploads
@@ -32,12 +32,35 @@ services:
 
   frontend:
     build: ./frontend
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
     ports:
       - "80:80"
+      - "443:443"
+    volumes:
+      - letsencrypt:/etc/letsencrypt:ro
+      - certbot-www:/var/www/certbot
     depends_on:
       - backend
+    restart: unless-stopped
+
+  certbot:
+    image: certbot/certbot:latest
+    entrypoint: /bin/sh /entrypoint.sh
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+      LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL:-}
+      LETSENCRYPT_STAGING: ${LETSENCRYPT_STAGING:-0}
+    volumes:
+      - ./certbot/entrypoint.sh:/entrypoint.sh:ro
+      - letsencrypt:/etc/letsencrypt
+      - certbot-www:/var/www/certbot
+    depends_on:
+      - frontend
     restart: unless-stopped
 
 volumes:
   pgdata:
   uploads:
+  letsencrypt:
+  certbot-www:

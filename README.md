@@ -47,11 +47,22 @@ npm run dev                 # läuft auf :5173
 # .env anlegen
 echo "JWT_SECRET=dein-geheimer-schluessel" > .env
 echo "ADMIN_PASSWORD=sicheres-passwort" >> .env
+echo "DOMAIN=sauna.example.de" >> .env
+echo "LETSENCRYPT_EMAIL=admin@example.de" >> .env
 
-docker compose up -d
+docker compose up -d --build
 ```
 
-App läuft dann auf Port 80.
+App läuft dann auf **HTTPS (Port 443)**, HTTP (Port 80) leitet automatisch um.
+
+### HTTPS / Let's Encrypt
+- Voraussetzung: DNS-Eintrag von `DOMAIN` zeigt auf den Server, Ports **80 und 443** sind offen.
+- Beim ersten Start nutzt nginx ein temporäres selbstsigniertes Zertifikat. Der `certbot`-Container
+  holt dann das echte Zertifikat; nginx übernimmt es automatisch innerhalb von ~1 Minute.
+- Erneuerung läuft automatisch (certbot prüft alle 12h, nginx lädt alle 12h neu).
+- Zum Testen ohne Rate-Limits: `LETSENCRYPT_STAGING=1` in `.env` (danach Volume `letsencrypt` löschen, bevor auf echt umgestellt wird).
+- Logs: `docker compose logs -f certbot frontend`
+- Ohne `DOMAIN` (bzw. `localhost`) läuft lokal nur das selbstsignierte Zertifikat.
 
 ---
 
@@ -70,8 +81,8 @@ App läuft dann auf Port 80.
 
 | Monitor | URL | Hinweis |
 |---|---|---|
-| Gäste-Display | `http://[SERVER]/` | Auto-Refresh alle 60s |
-| Personal-Display | `http://[SERVER]/personal` | Auto-Refresh alle 30s |
+| Gäste-Display | `https://[DOMAIN]/` | Auto-Refresh alle 60s |
+| Personal-Display | `https://[DOMAIN]/personal` | Auto-Refresh alle 30s |
 
 
 # Entwicklung Docker Neustart 
