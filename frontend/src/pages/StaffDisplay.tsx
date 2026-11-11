@@ -9,6 +9,30 @@ import Avatar from '../components/Avatar';
 import { formatTime, cn } from '../lib/utils';
 import { useClock } from '../hooks/useClock';
 
+const WARN_10_MIN = 10 * 60;
+const WARN_5_MIN = 5 * 60;
+
+/** Sekunden bis zum Start (start_time im Format HH:MM[:SS]) relativ zu now */
+function secondsUntil(startTime: string, now: Date): number {
+  const [h, m, sec] = startTime.split(':').map(Number);
+  const start = new Date(now);
+  start.setHours(h, m, sec || 0, 0);
+  return Math.floor((start.getTime() - now.getTime()) / 1000);
+}
+
+function formatCountdown(secs: number): string {
+  const s = Math.max(0, secs);
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
+
+/** 'urgent' = ≤ 5 Min, 'soon' = ≤ 10 Min, sonst null */
+function warnLevel(secs: number): 'urgent' | 'soon' | null {
+  if (secs <= 0) return null;
+  if (secs <= WARN_5_MIN) return 'urgent';
+  if (secs <= WARN_10_MIN) return 'soon';
+  return null;
+}
+
 function useTodayEvent(dateStr: string) {
   return useQuery<DayEvent | null>({
     queryKey: ['event-staff', dateStr],
@@ -47,6 +71,13 @@ export default function StaffDisplay() {
     return acc;
   }, {}) ?? {};
 
+  // Anstehende Aufgüsse in den nächsten 10 Minuten
+  const upcoming = activeSchedule
+    .filter(e => e.status === 'geplant')
+    .map(e => ({ entry: e, secs: secondsUntil(e.start_time, now) }))
+    .filter(({ secs }) => warnLevel(secs) !== null)
+    .sort((a, b) => a.secs - b.secs);
+
   // Welche Mitarbeiter machen gerade einen Aufguss?
   const activeStaffIds = new Set(
     activeSchedule
@@ -78,6 +109,57 @@ export default function StaffDisplay() {
           <div className="text-center py-20 text-gray-400 dark:text-stone-500">Kein Programm für heute.</div>
         ) : (
           <div className="flex flex-col gap-8">
+            {/* Countdown-Hinweise 10 / 5 Minuten */}
+            {upcoming.length > 0 && (
+              <section className="flex flex-col gap-3">
+                {upcoming.map(({ entry, secs }) => {
+                  const urgent = warnLevel(secs) === 'urgent';
+                  return (
+                    <div
+                      key={entry.id}
+                      className={cn(
+                        'rounded-2xl border-2 px-5 py-4 flex items-center gap-4 shadow-sm',
+                        urgent
+                          ? 'bg-red-50 border-red-500 dark:bg-red-950/40 dark:border-red-500'
+                          : 'bg-amber-50 border-amber-400 dark:bg-amber-950/30 dark:border-amber-500'
+                      )}
+                    >
+                      <div className={cn(
+                        'shrink-0 rounded-xl px-4 py-2 text-center text-white',
+                        urgent ? 'bg-red-600 animate-pulse' : 'bg-amber-500'
+                      )}>
+                        <p className="text-[10px] uppercase tracking-widest opacity-90">Start in</p>
+                        <p className="font-mono text-3xl font-bold tabular-nums leading-none">{formatCountdown(secs)}</p>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={cn(
+                          'text-xs font-semibold uppercase tracking-widest',
+                          urgent ? 'text-red-600 dark:text-red-400' : 'text-amber-600 dark:text-amber-400'
+                        )}>
+                          {urgent ? 'Achtung – Aufguss in weniger als 5 Minuten' : 'Hinweis – Aufguss in weniger als 10 Minuten'}
+                        </p>
+                        <p className="font-display text-xl font-semibold text-gray-900 dark:text-stone-100 truncate">
+                          {entry.custom_name ?? entry.template_name ?? 'Aufguss'}
+                        </p>
+                        <p className="text-gray-500 dark:text-stone-400 text-sm">
+                          {formatTime(entry.start_time)} Uhr · {entry.sauna_name}
+                          {entry.scents.length > 0 && ` · ${entry.scents.map(s => s.scent_name).join(', ')}`}
+                        </p>
+                      </div>
+                      {entry.staff_name ? (
+                        <div className="shrink-0 flex items-center gap-2">
+                          <Avatar name={entry.staff_name} url={entry.staff_avatar} size="lg" />
+                          <p className="font-semibold text-gray-900 dark:text-stone-100 hidden sm:block">{entry.staff_name}</p>
+                        </div>
+                      ) : (
+                        <p className="shrink-0 text-gray-500 dark:text-stone-400 italic text-sm">Nicht zugewiesen</p>
+                      )}
+                    </div>
+                  );
+                })}
+              </section>
+            )}
+
             {/* Timeline nach Mitarbeiter */}
             <section>
               <h2 className="text-steam-400 text-xs uppercase tracking-widest mb-4">Einteilung nach Mitarbeiter</h2>
@@ -121,24 +203,39 @@ export default function StaffDisplay() {
 
                       {/* Mini-Timeline */}
                       <div className="flex flex-col gap-2">
-                        {entries.map(entry => (
+                        {entries.map(entry => {
+                          const secs = secondsUntil(entry.start_time, now);
+                          const level = entry.status === 'geplant' ? warnLevel(secs) : null;
+                          return (
                           <div
                             key={entry.id}
                             className={cn(
                               'rounded-xl p-3 flex flex-col gap-2 transition-all',
                               entry.status === 'läuft'
                                 ? 'bg-green-50 border border-green-400 dark:bg-green-900/50 dark:border-green-600'
+                                : level === 'urgent'
+                                ? 'bg-red-50 border-2 border-red-500 dark:bg-red-950/40'
+                                : level === 'soon'
+                                ? 'bg-amber-50 border-2 border-amber-400 dark:bg-amber-950/30'
                                 : 'bg-gray-100 dark:bg-stone-800'
                             )}
                           >
-                            <div className="flex items-center justify-between">
+                            <div className="flex items-center justify-between gap-2">
                               <span className={cn(
                                 'font-mono font-bold text-base',
                                 entry.status === 'läuft' ? 'text-green-600 dark:text-green-400' : 'text-sauna-400'
                               )}>
                                 {formatTime(entry.start_time)}
                               </span>
-                              <span className="text-gray-500 dark:text-stone-400 text-xs">{entry.sauna_name}</span>
+                              {level && (
+                                <span className={cn(
+                                  'badge text-white text-xs font-mono tabular-nums',
+                                  level === 'urgent' ? 'bg-red-600 animate-pulse' : 'bg-amber-500'
+                                )}>
+                                  in {formatCountdown(secs)}
+                                </span>
+                              )}
+                              <span className="text-gray-500 dark:text-stone-400 text-xs ml-auto">{entry.sauna_name}</span>
                             </div>
                             <p className="font-display font-semibold text-gray-900 dark:text-stone-100 text-sm leading-tight">
                               {entry.custom_name ?? entry.template_name}
@@ -149,7 +246,8 @@ export default function StaffDisplay() {
                               </p>
                             )}
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   );
