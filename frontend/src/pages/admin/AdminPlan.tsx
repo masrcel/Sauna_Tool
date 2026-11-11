@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format, addDays, subDays, addWeeks, subWeeks, startOfWeek, parseISO, isValid, isSameDay } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -8,7 +9,7 @@ import { DayEvent, AufgussTemplate, User, Sauna, ScheduleEntry } from '../../typ
 import AufgussCard from '../../components/AufgussCard';
 import ScheduleForm from '../../components/ScheduleForm';
 import { ApplyDayTemplateModal, SaveDayTemplateModal } from '../../components/DayTemplateModals';
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Plus, Trash2, Pencil, CalendarPlus, Save } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Plus, Trash2, Pencil, CalendarPlus, Save, UserPlus } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 export default function AdminPlan() {
@@ -26,6 +27,7 @@ export default function AdminPlan() {
   const [showApply, setShowApply] = useState(false);
   const [showSaveTemplate, setShowSaveTemplate] = useState(false);
   const qc = useQueryClient();
+  const { user } = useAuth();
   const dateStr = format(date, 'yyyy-MM-dd');
 
   // Wochenleiste: Montag bis Sonntag der gewählten Woche, mit Anzahl geplanter Aufgüsse
@@ -100,6 +102,16 @@ export default function AdminPlan() {
       api.put(`/events/${dateStr}/schedule/${id}`, { sauna_id, template_id, assigned_user_id, custom_name, custom_subtitle, start_time, end_time, status }),
     onSuccess: () => { invalidateDay(); qc.invalidateQueries({ queryKey: ['event', dateStr] }); },
     onError: (err: any) => alert(`Fehler: ${err.response?.data?.error ?? err.message}`),
+  });
+
+  // „Mir zuweisen“: freien Aufguss selbst übernehmen
+  const claimMutation = useMutation({
+    mutationFn: (id: string) => api.post(`/events/${dateStr}/schedule/${id}/claim`),
+    onSuccess: () => { invalidateDay(); qc.invalidateQueries({ queryKey: ['event', dateStr] }); },
+    onError: (err: any) => {
+      alert(err.response?.data?.error ?? err.message);
+      invalidateDay(); // z. B. wenn jemand anderes schneller war: Ansicht aktualisieren
+    },
   });
 
   return (
@@ -191,8 +203,20 @@ export default function AdminPlan() {
         <div className="flex flex-col gap-3">
           {event.schedule.map(entry => (
             <div key={entry.id} className="flex flex-col sm:flex-row gap-2 sm:gap-3 sm:items-start">
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 flex flex-col gap-2">
                 <AufgussCard entry={entry} showDetails compact />
+                {!entry.assigned_user_id && user && entry.status !== 'fertig' && entry.status !== 'abgesagt' && (
+                  <div className="flex items-center justify-between gap-3 rounded-xl border border-dashed border-sauna-500/60 bg-sauna-500/5 px-3 py-2">
+                    <span className="text-sm text-gray-600 dark:text-stone-400">Noch niemandem zugewiesen</span>
+                    <button
+                      onClick={() => claimMutation.mutate(entry.id)}
+                      disabled={claimMutation.isPending}
+                      className="btn-primary py-1.5 px-3 text-sm flex items-center gap-1.5 shrink-0 disabled:opacity-50"
+                    >
+                      <UserPlus className="w-4 h-4" /> Mir zuweisen
+                    </button>
+                  </div>
+                )}
               </div>
               <div className="flex sm:flex-col gap-2 sm:pt-1 shrink-0">
                 {/* Status-Buttons */}

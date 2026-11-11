@@ -94,6 +94,7 @@ Die Displays (`/` und `/personal`) sind ohne Login erreichbar und zeigen nur Dat
 |---|---|:-:|:-:|:-:|
 | **Tagesplan** | Ansehen (Displays) | ✅ | ✅ | ✅ |
 | | Aufgüsse anlegen, ändern, löschen, Düfte zuweisen | – | ✅ | ✅ |
+| | Freien Aufguss sich selbst zuweisen („Mir zuweisen“) | – | ✅ | ✅ |
 | **Tagesvorlagen** | Ansehen, anlegen, ändern, löschen, anwenden | – | ✅ | ✅ |
 | **Aufguss-Vorlagen** | Ansehen, anlegen, ändern, löschen | – | ✅ | ✅ |
 | **Ideen** | Alle Ideen ansehen, neue anlegen | – | ✅ | ✅ |

@@ -178,6 +178,34 @@ router.put('/:date/schedule/:scheduleId', requireAuth, async (req, res, next) =>
   } catch (err) { next(err); }
 });
 
+// Freien Aufguss selbst übernehmen („Mir zuweisen“) – nur wenn noch niemand zugewiesen ist
+router.post('/:date/schedule/:scheduleId/claim', requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    const entry = await queryOne<any>(`
+      SELECT s.id, s.sauna_id, s.assigned_user_id, s.status,
+             TO_CHAR(s.start_time, 'HH24:MI') as start_time, TO_CHAR(s.end_time, 'HH24:MI') as end_time
+      FROM aufguss_schedule s JOIN events e ON e.id = s.event_id
+      WHERE s.id = $1 AND e.event_date = $2
+    `, [req.params.scheduleId, req.params.date]);
+    if (!entry) { res.status(404).json({ error: 'Aufguss nicht gefunden' }); return; }
+    if (entry.assigned_user_id) { res.status(409).json({ error: 'Dieser Aufguss ist bereits jemandem zugewiesen.' }); return; }
+    if (entry.status === 'fertig' || entry.status === 'abgesagt') {
+      res.status(409).json({ error: 'Fertige oder abgesagte Aufgüsse können nicht übernommen werden.' });
+      return;
+    }
+    const conflict = await checkConflicts(req.params.date, entry.sauna_id, req.user!.id, entry.start_time, entry.end_time, entry.id);
+    if (conflict) { res.status(409).json({ error: conflict }); return; }
+
+    // Atomar: falls jemand gleichzeitig klickt, gewinnt nur einer
+    const updated = await queryOne(
+      'UPDATE aufguss_schedule SET assigned_user_id=$1 WHERE id=$2 AND assigned_user_id IS NULL RETURNING *',
+      [req.user!.id, entry.id]
+    );
+    if (!updated) { res.status(409).json({ error: 'Dieser Aufguss wurde gerade von jemand anderem übernommen.' }); return; }
+    res.json(updated);
+  } catch (err) { next(err); }
+});
+
 router.delete('/:date/schedule/:scheduleId', requireAuth, async (req, res) => {
   await query('DELETE FROM aufguss_schedule WHERE id=$1', [req.params.scheduleId]);
   res.json({ ok: true });

@@ -14,6 +14,11 @@ Versionierung nach [Semantic Versioning](https://semver.org/lang/de/):
 
 ## [Unveröffentlicht]
 
+### Hinzugefügt
+- **„Mir zuweisen“:** Ist ein Aufguss im Tagesplan noch niemandem zugewiesen, kann ihn jeder
+  angemeldete Mitarbeiter mit einem Klick selbst übernehmen. Geprüft wird, ob die Person zu der
+  Zeit schon einen anderen Aufguss leitet; klicken zwei gleichzeitig, bekommt ihn nur einer.
+
 ---
 
 ## [1.5.0] – 2026-11-11
