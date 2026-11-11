@@ -23,6 +23,21 @@ export const CHANGE_TYPE_LABELS: Record<ChangeType, string> = {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '1.3.0',
+    date: '2026-11-11',
+    title: 'Duft-Suche & Löschen repariert',
+    changes: {
+      added: [
+        'Duft-Datenbank: Suchfeld für Name, Beschreibung und Anmerkungen, kombinierbar mit dem Kategorie-Filter.',
+        'Duft-Datenbank: Die Rückfrage vor dem Löschen zeigt, in wie vielen Vorlagen, Aufgüssen und Ideen der Duft noch verwendet wird.',
+      ],
+      fixed: [
+        'Düfte, die noch in Vorlagen, Tagesplänen oder Ideen verwendet wurden, ließen sich nicht löschen.',
+        'Fehler beim Löschen (z. B. fehlende Admin-Rechte) werden jetzt angezeigt statt stillschweigend ignoriert.',
+      ],
+    },
+  },
+  {
     version: '1.2.0',
     date: '2026-11-11',
     title: 'Countdowns & Display-Verbesserungen',

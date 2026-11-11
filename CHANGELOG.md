@@ -18,6 +18,23 @@ _Noch keine Änderungen._
 
 ---
 
+## [1.3.0] – 2026-11-11
+
+### Hinzugefügt
+- **Admin-Panel, Duft-Datenbank:** Suchfeld zum Filtern nach Name, Beschreibung und Anmerkungen
+  (kombinierbar mit dem Kategorie-Filter, mit Button zum Leeren).
+- **Admin-Panel, Duft-Datenbank:** Wird ein Duft noch in Vorlagen, geplanten Aufgüssen oder Ideen
+  verwendet, zeigt die Rückfrage vor dem Löschen, wo genau. Auf Wunsch wird er dort mit entfernt.
+
+### Behoben
+- **Düfte löschen:** Düfte, die noch in Vorlagen, Tagesplänen oder Ideen verwendet wurden, ließen sich
+  nicht löschen. Die Datenbank blockierte den Vorgang, die Anfrage blieb ohne Antwort hängen und
+  im Admin-Panel passierte nichts. Löschen erfolgt jetzt in einer Transaktion
+  (`DELETE /api/scents/:id`, mit `?force=true` inkl. Verknüpfungen).
+- **Düfte löschen:** Fehler (z. B. fehlende Admin-Rechte) werden jetzt im Admin-Panel angezeigt.
+
+---
+
 ## [1.2.0] – 2026-11-11
 
 ### Hinzugefügt

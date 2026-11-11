@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
 import { Scent } from '../../types';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, X } from 'lucide-react';
 
 const CATEGORIES = ['fruchtig', 'holzig', 'blumig', 'medizinisch', 'würzig', 'frisch', 'orientalisch', 'sonstiges'];
 const UNITS = ['ml', 'g', 'Tropfen'];
@@ -12,13 +12,42 @@ export default function AdminDuefte() {
   const [showForm, setShowForm] = useState(false);
   const [editScent, setEditScent] = useState<Scent | null>(null);
   const [filterCat, setFilterCat] = useState('');
+  const [search, setSearch] = useState('');
 
   const { data: scents = [] } = useQuery<Scent[]>({ queryKey: ['scents'], queryFn: async () => (await api.get('/scents')).data });
   const addMutation = useMutation({ mutationFn: (d: any) => api.post('/scents', d), onSuccess: () => { qc.invalidateQueries({ queryKey: ['scents'] }); setShowForm(false); } });
   const updateMutation = useMutation({ mutationFn: ({ id, ...d }: any) => api.put(`/scents/${id}`, d), onSuccess: () => { qc.invalidateQueries({ queryKey: ['scents'] }); setEditScent(null); } });
-  const deleteMutation = useMutation({ mutationFn: (id: string) => api.delete(`/scents/${id}`), onSuccess: () => qc.invalidateQueries({ queryKey: ['scents'] }) });
+  const deleteMutation = useMutation({
+    mutationFn: ({ id, force }: { id: string; force?: boolean }) => api.delete(`/scents/${id}`, { params: force ? { force: true } : undefined }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['scents'] }),
+    onError: (err: any, vars) => {
+      const status = err.response?.status;
+      if (status === 409) {
+        const u = err.response.data?.usage ?? {};
+        const parts = [
+          u.templates ? `${u.templates} Vorlage(n)` : null,
+          u.schedules ? `${u.schedules} geplanten Aufguss/Aufgüssen` : null,
+          u.ideas ? `${u.ideas} Idee(n)` : null,
+        ].filter(Boolean).join(', ');
+        if (confirm(`Dieser Duft wird noch in ${parts} verwendet.\n\nTrotzdem löschen? Der Duft wird dort ebenfalls entfernt.`)) {
+          deleteMutation.mutate({ id: vars.id, force: true });
+        }
+      } else if (status === 403) {
+        alert('Nur Admins dürfen Düfte löschen.');
+      } else {
+        alert(`Löschen fehlgeschlagen: ${err.response?.data?.error ?? err.message}`);
+      }
+    },
+  });
 
-  const filtered = filterCat ? scents.filter(s => s.category === filterCat) : scents;
+  const searchTerm = search.trim().toLowerCase();
+  const filtered = scents.filter(s =>
+    (!filterCat || s.category === filterCat) &&
+    (!searchTerm ||
+      s.name.toLowerCase().includes(searchTerm) ||
+      (s.description ?? '').toLowerCase().includes(searchTerm) ||
+      (s.dosage_note ?? '').toLowerCase().includes(searchTerm))
+  );
   const grouped = filtered.reduce<Record<string, Scent[]>>((acc, s) => {
     const k = s.category ?? 'sonstiges';
     acc[k] = [...(acc[k] ?? []), s];
@@ -33,6 +62,22 @@ export default function AdminDuefte() {
           <p className="text-gray-400 dark:text-stone-500 text-sm mt-0.5">Standardmengen werden beim Hinzufügen zu Vorlagen automatisch vorausgefüllt</p>
         </div>
         <button onClick={() => setShowForm(true)} className="btn-primary flex items-center gap-2"><Plus className="w-4 h-4" /> Duft anlegen</button>
+      </div>
+
+      {/* Suche */}
+      <div className="relative">
+        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-stone-500 pointer-events-none" />
+        <input
+          className="input pl-9 pr-9"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Düfte durchsuchen (Name, Beschreibung, Anmerkungen) …"
+        />
+        {search && (
+          <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-stone-500 dark:hover:text-stone-300" aria-label="Suche leeren">
+            <X className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
       {/* Kategorie-Filter */}
@@ -83,7 +128,7 @@ export default function AdminDuefte() {
                 </div>
                 <div className="flex gap-2 shrink-0">
                   <button onClick={() => setEditScent(s)} className="btn-secondary p-2"><Pencil className="w-4 h-4" /></button>
-                  <button onClick={() => { if (confirm('Duft löschen?')) deleteMutation.mutate(s.id); }} className="btn-danger p-2"><Trash2 className="w-4 h-4" /></button>
+                  <button onClick={() => { if (confirm(`Duft „${s.name}" löschen?`)) deleteMutation.mutate({ id: s.id }); }} className="btn-danger p-2"><Trash2 className="w-4 h-4" /></button>
                 </div>
               </div>
             ))}
@@ -91,7 +136,11 @@ export default function AdminDuefte() {
         </div>
       ))}
 
-      {filtered.length === 0 && <p className="text-gray-400 dark:text-stone-500 text-center py-12">Noch keine Düfte angelegt.</p>}
+      {filtered.length === 0 && (
+        <p className="text-gray-400 dark:text-stone-500 text-center py-12">
+          {scents.length === 0 ? 'Noch keine Düfte angelegt.' : 'Keine Düfte gefunden.'}
+        </p>
+      )}
 
       {(showForm || editScent) && (
         <ScentForm

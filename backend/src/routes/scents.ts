@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { query, queryOne } from '../db/client';
+import { pool, query, queryOne } from '../db/client';
 import { requireAdmin, requireAuth } from '../middleware/auth';
 
 const router = Router();
@@ -29,9 +29,37 @@ router.put('/:id', requireAuth, async (req, res) => {
   res.json(scent);
 });
 
-router.delete('/:id', requireAdmin, async (req, res) => {
-  await query('DELETE FROM scents WHERE id=$1', [req.params.id]);
-  res.json({ ok: true });
+router.delete('/:id', requireAdmin, async (req, res, next) => {
+  const { id } = req.params;
+  const force = req.query.force === 'true';
+  const client = await pool.connect();
+  try {
+    const usage = await client.query(
+      `SELECT
+         (SELECT COUNT(*) FROM template_scents WHERE scent_id=$1)::int AS templates,
+         (SELECT COUNT(*) FROM schedule_scents WHERE scent_id=$1)::int AS schedules,
+         (SELECT COUNT(*) FROM idea_scents WHERE scent_id=$1)::int AS ideas`,
+      [id]
+    );
+    const { templates, schedules, ideas } = usage.rows[0];
+    if (!force && templates + schedules + ideas > 0) {
+      res.status(409).json({ error: 'Duft wird noch verwendet', usage: { templates, schedules, ideas } });
+      return;
+    }
+
+    await client.query('BEGIN');
+    await client.query('DELETE FROM template_scents WHERE scent_id=$1', [id]);
+    await client.query('DELETE FROM schedule_scents WHERE scent_id=$1', [id]);
+    await client.query('DELETE FROM idea_scents WHERE scent_id=$1', [id]);
+    await client.query('DELETE FROM scents WHERE id=$1', [id]);
+    await client.query('COMMIT');
+    res.json({ ok: true });
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    next(err);
+  } finally {
+    client.release();
+  }
 });
 
 export default router;
