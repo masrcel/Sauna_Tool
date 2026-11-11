@@ -12,6 +12,8 @@ async function migrate() {
 
   // Spalten-Migrationen für bestehende Datenbanken
   await pool.query(`ALTER TABLE saunas ADD COLUMN IF NOT EXISTS break_minutes INT NOT NULL DEFAULT 0`);
+  // wird beim Bearbeiten von Mitarbeitern gesetzt, fehlte bisher im Schema
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`);
 
   // App-Einstellungen Standardwerte
   await pool.query(`

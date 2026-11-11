@@ -1,20 +1,69 @@
-import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import multer from 'multer';
 import path from 'path';
+import { z } from 'zod';
 import { query, queryOne } from '../db/client';
 import { requireAdmin, requireAuth, isAdmin, AuthRequest } from '../middleware/auth';
+import { createRouter, HttpError } from '../lib/errors';
+import { parse, validateParams, text, boolWithDefault } from '../lib/validation';
 
-const router = Router();
+const router = createRouter();
+validateParams(router);
+
+const email = z.preprocess(v => (typeof v === 'string' ? v.trim() : v), z.string().min(1).max(255).email());
+const role = z.preprocess(v => (v === '' || v == null ? undefined : v), z.enum(['admin', 'staff']).default('staff'));
+// bcrypt berücksichtigt nur die ersten 72 Byte
+const password = z.string().min(1).max(72);
+
+const createUserSchema = z.object({
+  name: text(100),
+  email,
+  password,
+  role,
+});
+
+const updateUserSchema = z.object({
+  name: text(100),
+  email,
+  role,
+  active: boolWithDefault(true),
+  // leer = Passwort unverändert lassen
+  password: z.preprocess(v => (v === '' || v == null ? undefined : v), password.optional()),
+});
+
+// Nur JPG und PNG erlaubt – Dateiendung wird aus dem MIME-Typ abgeleitet, nicht vom Dateinamen übernommen
+const ALLOWED_IMAGE_TYPES: Record<string, string> = {
+  'image/jpeg': '.jpg',
+  'image/png': '.png',
+};
+const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png'];
 
 const storage = multer.diskStorage({
   destination: path.join(__dirname, '../../uploads/avatars'),
   filename: (_, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `${Date.now()}${ext}`);
+    cb(null, `${Date.now()}${ALLOWED_IMAGE_TYPES[file.mimetype]}`);
   },
 });
-const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } });
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (ALLOWED_IMAGE_TYPES[file.mimetype] && ALLOWED_EXTENSIONS.includes(ext)) cb(null, true);
+    else cb(new Error('INVALID_IMAGE_TYPE'));
+  },
+});
+
+// Multer-Fehler (falscher Dateityp, zu groß) als verständliche 400er-Antwort zurückgeben
+function avatarUpload(req: AuthRequest, res: any, next: any) {
+  upload.single('avatar')(req, res, (err: any) => {
+    if (!err) { next(); return; }
+    if (err.message === 'INVALID_IMAGE_TYPE') next(new HttpError(400, 'Nur Bilder im Format JPG oder PNG sind erlaubt'));
+    else if (err.code === 'LIMIT_FILE_SIZE') next(new HttpError(400, 'Das Bild darf maximal 5 MB groß sein'));
+    else if (err instanceof multer.MulterError) next(new HttpError(400, 'Upload fehlgeschlagen: ungültige Anfrage'));
+    else next(err);
+  });
+}
 
 router.get('/', requireAuth, async (_, res) => {
   const users = await query('SELECT id, name, email, role, avatar_url, active FROM users ORDER BY name');
@@ -22,30 +71,27 @@ router.get('/', requireAuth, async (_, res) => {
 });
 
 router.post('/', requireAdmin, async (req: AuthRequest, res) => {
-  const { name, email, password, role } = req.body;
-  if (!name || !email || !password) {
-    res.status(400).json({ error: 'Name, E-Mail und Passwort erforderlich' });
-    return;
-  }
+  const { name, email, password, role } = parse(createUserSchema, req.body);
   const hash = await bcrypt.hash(password, 10);
   const user = await queryOne(
     'INSERT INTO users (name, email, password_hash, role) VALUES ($1,$2,$3,$4) RETURNING id, name, email, role, avatar_url',
-    [name, email, hash, role || 'staff']
+    [name, email, hash, role]
   );
   res.status(201).json(user);
 });
 
 router.put('/:id', requireAdmin, async (req: AuthRequest, res) => {
-  const { name, email, role, active, password } = req.body;
+  const { name, email, role, active, password } = parse(updateUserSchema, req.body);
   const { id } = req.params;
+  const user = await queryOne(
+    'UPDATE users SET name=$1, email=$2, role=$3, active=$4, updated_at=NOW() WHERE id=$5 RETURNING id, name, email, role, avatar_url, active',
+    [name, email, role, active, id]
+  );
+  if (!user) throw new HttpError(404, 'Mitarbeiter nicht gefunden');
   if (password) {
     const hash = await bcrypt.hash(password, 10);
     await query('UPDATE users SET password_hash=$1 WHERE id=$2', [hash, id]);
   }
-  const user = await queryOne(
-    'UPDATE users SET name=$1, email=$2, role=$3, active=$4, updated_at=NOW() WHERE id=$5 RETURNING id, name, email, role, avatar_url, active',
-    [name, email, role, active ?? true, id]
-  );
   res.json(user);
 });
 
@@ -58,7 +104,7 @@ function canEditAvatar(req: AuthRequest, res: any, next: any) {
   next();
 }
 
-router.post('/:id/avatar', requireAuth, canEditAvatar, upload.single('avatar'), async (req: AuthRequest, res) => {
+router.post('/:id/avatar', requireAuth, canEditAvatar, avatarUpload, async (req: AuthRequest, res) => {
   if (!req.file) { res.status(400).json({ error: 'Kein Bild hochgeladen' }); return; }
   const url = `/uploads/avatars/${req.file.filename}`;
   await query('UPDATE users SET avatar_url=$1 WHERE id=$2', [url, req.params.id]);

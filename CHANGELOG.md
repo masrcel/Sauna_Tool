@@ -19,6 +19,29 @@ Versionierung nach [Semantic Versioning](https://semver.org/lang/de/):
   angemeldete Mitarbeiter mit einem Klick selbst übernehmen. Geprüft wird, ob die Person zu der
   Zeit schon einen anderen Aufguss leitet; klicken zwei gleichzeitig, bekommt ihn nur einer.
 
+### Behoben
+- **Mitarbeiter bearbeiten:** Speichern schlug fehl, weil der Tabelle `users` die Spalte
+  `updated_at` fehlte. Die Migration ergänzt sie beim Start automatisch.
+- **Hängende Anfragen:** Ein Fehler in einer Route (z. B. Datenbank nicht erreichbar) ließ die
+  Anfrage bisher ohne Antwort hängen. Jetzt fängt ein zentraler Error-Handler alle Fehler ab
+  (auch aus `async`-Routen) und antwortet mit einer klaren Meldung.
+
+### Sicherheit
+- **Profilbilder nur noch als JPG oder PNG:** Andere Dateitypen werden beim Upload abgelehnt
+  (im Browser und auf dem Server), mit verständlicher Fehlermeldung statt Serverfehler.
+- **Eingabeprüfung im Backend:** Alle schreibenden Endpunkte prüfen ihre Daten jetzt mit
+  `zod` (Typen, Pflichtfelder, Längen, IDs, Datum/Uhrzeit, Farben, erlaubte Werte).
+  URL-Parameter wie `:id` und `:date` werden vorab geprüft. Ungültige Eingaben ergeben
+  `400` mit deutscher Meldung, z. B. „start_time: ist keine gültige Uhrzeit (HH:MM)“.
+- **Keine internen Fehlerdetails mehr nach außen:** Unerwartete Fehler werden nur noch geloggt,
+  der Client bekommt „Interner Serverfehler“.
+- Das Logo in den Einstellungen muss jetzt eine `http(s)://`- oder relative URL sein.
+- **Rate-Limiting für den Login** (Schutz gegen Passwort-Raten), zweistufig:
+  - nginx: pro IP höchstens 10 Login-Anfragen pro Minute (kurze Spitzen bis 5 extra).
+  - Backend (`express-rate-limit`): pro IP höchstens 10 *fehlgeschlagene* Anmeldungen in
+    15 Minuten; erfolgreiche Logins zählen nicht mit.
+  - Die Login-Seite zeigt dann „Zu viele Anmeldeversuche …“ statt „Passwort falsch“.
+
 ---
 
 ## [1.5.0] – 2026-11-11

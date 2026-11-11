@@ -15,8 +15,15 @@ export default function AdminLogin() {
     try {
       await login(email, password);
       navigate('/admin/plan');
-    } catch {
-      setError('E-Mail oder Passwort falsch.');
+    } catch (err: any) {
+      const status = err.response?.status;
+      if (status === 429) {
+        setError(err.response?.data?.error ?? 'Zu viele Anmeldeversuche. Bitte später erneut versuchen.');
+      } else if (status === 401 || status === 400) {
+        setError('E-Mail oder Passwort falsch.');
+      } else {
+        setError('Anmeldung gerade nicht möglich. Bitte später erneut versuchen.');
+      }
     }
   }
 

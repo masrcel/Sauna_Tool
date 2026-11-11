@@ -1,25 +1,43 @@
-import { Router } from 'express';
 import { PoolClient } from 'pg';
+import { z } from 'zod';
 import { pool, query, queryOne } from '../db/client';
 import { requireAuth, AuthRequest } from '../middleware/auth';
+import { createRouter, HttpError } from '../lib/errors';
+import { parse, validateParams, uuid, optUuid, text, optText, time, optTime, date, list, scentList } from '../lib/validation';
 import { checkConflicts } from './events';
 
-const router = Router();
+const router = createRouter();
+validateParams(router);
 
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-const TIME_RE = /^\d{2}:\d{2}(:\d{2})?$/;
 const MAX_APPLY_DAYS = 92;
 
-interface EntryInput {
-  sauna_id: string;
-  template_id?: string | null;
-  assigned_user_id?: string | null;
-  custom_name?: string | null;
-  custom_subtitle?: string | null;
-  start_time: string;
-  end_time?: string | null;
-  scents?: { scent_id: string; dosage_ml?: number | string | null; dosage_note?: string | null }[];
-}
+const entrySchema = z.object({
+  sauna_id: uuid,
+  template_id: optUuid,
+  assigned_user_id: optUuid,
+  custom_name: optText(200),
+  custom_subtitle: optText(200),
+  start_time: time,
+  end_time: optTime,
+  scents: scentList,
+});
+type EntryInput = z.infer<typeof entrySchema>;
+
+const dayTemplateSchema = z.object({
+  name: text(200),
+  description: optText(),
+  entries: list(entrySchema, 200),
+});
+
+const fromDateSchema = z.object({
+  name: text(200),
+  description: optText(),
+});
+
+const applySchema = z.object({
+  dates: z.array(date).min(1, 'Keine Tage ausgewählt'),
+  mode: z.preprocess(v => (v === '' || v == null ? undefined : v), z.enum(['append', 'replace']).default('append')),
+});
 
 const LIST_SQL = `
   SELECT d.*, u.name as creator_name,
@@ -51,16 +69,6 @@ const LIST_SQL = `
   LEFT JOIN users u ON u.id = d.created_by
 `;
 
-function validateEntries(entries: any): string | null {
-  if (!Array.isArray(entries)) return 'entries muss eine Liste sein';
-  for (const e of entries) {
-    if (!e?.sauna_id) return 'Jeder Aufguss braucht eine Sauna';
-    if (!e?.start_time || !TIME_RE.test(e.start_time)) return 'Jeder Aufguss braucht eine gültige Startzeit';
-    if (e.end_time && !TIME_RE.test(e.end_time)) return 'Ungültige Endzeit';
-  }
-  return null;
-}
-
 async function insertEntries(client: PoolClient, dayTemplateId: string, entries: EntryInput[]) {
   const sorted = [...entries].sort((a, b) => a.start_time.localeCompare(b.start_time));
   for (let i = 0; i < sorted.length; i++) {
@@ -70,14 +78,14 @@ async function insertEntries(client: PoolClient, dayTemplateId: string, entries:
          (day_template_id, sauna_id, template_id, assigned_user_id, custom_name, custom_subtitle, start_time, end_time, sort_order)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id`,
       [dayTemplateId, e.sauna_id, e.template_id || null, e.assigned_user_id || null,
-       e.custom_name || null, e.custom_subtitle || null, e.start_time, e.end_time || null, i]
+       e.custom_name ?? null, e.custom_subtitle ?? null, e.start_time, e.end_time ?? null, i]
     );
     const scents = (e.scents ?? []).filter(s => s.scent_id);
     for (let j = 0; j < scents.length; j++) {
       const s = scents[j];
       await client.query(
         'INSERT INTO day_template_entry_scents (entry_id, scent_id, dosage_ml, dosage_note, sort_order) VALUES ($1,$2,$3,$4,$5)',
-        [rows[0].id, s.scent_id, s.dosage_ml === '' || s.dosage_ml == null ? null : s.dosage_ml, s.dosage_note || null, j]
+        [rows[0].id, s.scent_id, s.dosage_ml ?? null, s.dosage_note ?? null, j]
       );
     }
   }
@@ -108,14 +116,11 @@ router.get('/', requireAuth, async (_req, res, next) => {
 // Neue Tagesvorlage anlegen
 router.post('/', requireAuth, async (req: AuthRequest, res, next) => {
   try {
-    const { name, description, entries = [] } = req.body;
-    if (!name?.trim()) { res.status(400).json({ error: 'Name ist erforderlich' }); return; }
-    const invalid = validateEntries(entries);
-    if (invalid) { res.status(400).json({ error: invalid }); return; }
+    const { name, description, entries } = parse(dayTemplateSchema, req.body);
     const created = await inTransaction(async client => {
       const { rows } = await client.query(
         'INSERT INTO day_templates (name, description, created_by) VALUES ($1,$2,$3) RETURNING *',
-        [name.trim(), description || null, req.user!.id]
+        [name, description, req.user!.id]
       );
       await insertEntries(client, rows[0].id, entries);
       return rows[0];
@@ -128,9 +133,7 @@ router.post('/', requireAuth, async (req: AuthRequest, res, next) => {
 router.post('/from-date/:date', requireAuth, async (req: AuthRequest, res, next) => {
   try {
     const { date } = req.params;
-    const { name, description } = req.body;
-    if (!DATE_RE.test(date)) { res.status(400).json({ error: 'Ungültiges Datum' }); return; }
-    if (!name?.trim()) { res.status(400).json({ error: 'Name ist erforderlich' }); return; }
+    const { name, description } = parse(fromDateSchema, req.body);
 
     const schedule = await query(`
       SELECT s.id, s.sauna_id, s.template_id, s.assigned_user_id, s.custom_name, s.custom_subtitle,
@@ -150,7 +153,7 @@ router.post('/from-date/:date', requireAuth, async (req: AuthRequest, res, next)
     const created = await inTransaction(async client => {
       const { rows } = await client.query(
         'INSERT INTO day_templates (name, description, created_by) VALUES ($1,$2,$3) RETURNING *',
-        [name.trim(), description || null, req.user!.id]
+        [name, description, req.user!.id]
       );
       await insertEntries(client, rows[0].id, schedule as EntryInput[]);
       return rows[0];
@@ -162,14 +165,11 @@ router.post('/from-date/:date', requireAuth, async (req: AuthRequest, res, next)
 // Tagesvorlage ändern (Aufgüsse werden komplett ersetzt)
 router.put('/:id', requireAuth, async (req, res, next) => {
   try {
-    const { name, description, entries = [] } = req.body;
-    if (!name?.trim()) { res.status(400).json({ error: 'Name ist erforderlich' }); return; }
-    const invalid = validateEntries(entries);
-    if (invalid) { res.status(400).json({ error: invalid }); return; }
+    const { name, description, entries } = parse(dayTemplateSchema, req.body);
     const updated = await inTransaction(async client => {
       const { rows } = await client.query(
         'UPDATE day_templates SET name=$1, description=$2, updated_at=NOW() WHERE id=$3 RETURNING *',
-        [name.trim(), description || null, req.params.id]
+        [name, description, req.params.id]
       );
       if (!rows[0]) return null;
       await client.query('DELETE FROM day_template_entries WHERE day_template_id=$1', [req.params.id]);
@@ -196,12 +196,9 @@ router.delete('/:id', requireAuth, async (req, res, next) => {
  */
 router.post('/:id/apply', requireAuth, async (req: AuthRequest, res, next) => {
   try {
-    const { dates, mode = 'append' } = req.body as { dates: string[]; mode: 'append' | 'replace' };
-    if (!Array.isArray(dates) || dates.length === 0) { res.status(400).json({ error: 'Keine Tage ausgewählt' }); return; }
+    const { dates, mode } = parse(applySchema, req.body);
     const uniqueDates = [...new Set(dates)].sort();
-    if (uniqueDates.some(d => !DATE_RE.test(d))) { res.status(400).json({ error: 'Ungültiges Datum' }); return; }
-    if (uniqueDates.length > MAX_APPLY_DAYS) { res.status(400).json({ error: `Maximal ${MAX_APPLY_DAYS} Tage auf einmal` }); return; }
-    if (mode !== 'append' && mode !== 'replace') { res.status(400).json({ error: 'Ungültiger Modus' }); return; }
+    if (uniqueDates.length > MAX_APPLY_DAYS) throw new HttpError(400, `Maximal ${MAX_APPLY_DAYS} Tage auf einmal`);
 
     const dayTemplate = await queryOne<any>(`${LIST_SQL} WHERE d.id = $1`, [req.params.id]);
     if (!dayTemplate) { res.status(404).json({ error: 'Tagesvorlage nicht gefunden' }); return; }

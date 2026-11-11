@@ -1,8 +1,27 @@
-import { Router } from 'express';
+import { z } from 'zod';
 import { query, queryOne } from '../db/client';
 import { requireAuth, isAdmin, AuthRequest } from '../middleware/auth';
+import { createRouter } from '../lib/errors';
+import { parse, validateParams, text, list } from '../lib/validation';
 
-const router = Router();
+const router = createRouter();
+validateParams(router);
+
+const CATEGORIES = ['duft', 'zeremonie', 'musik', 'sonstiges'] as const;
+
+const ideaSchema = z.object({
+  title: text(200),
+  category: z.preprocess(v => (v === '' || v == null ? undefined : v), z.enum(CATEGORIES).default('duft')),
+  content: text(10_000),
+  tags: list(text(50), 30),
+});
+
+const commentSchema = z.object({ content: text(5_000) });
+
+const listQuerySchema = z.object({
+  category: z.enum(CATEGORIES).optional(),
+  search: z.string().max(200).optional(),
+});
 
 /** Bearbeiten/Löschen nur durch den Ersteller oder einen Admin. Antwortet selbst, wenn nicht erlaubt. */
 async function canModifyIdea(req: AuthRequest, res: any): Promise<boolean> {
@@ -16,7 +35,7 @@ async function canModifyIdea(req: AuthRequest, res: any): Promise<boolean> {
 }
 
 router.get('/', requireAuth, async (req, res) => {
-  const { category, search } = req.query;
+  const { category, search } = parse(listQuerySchema, req.query);
   let sql = `
     SELECT i.*, u.name as creator_name, u.avatar_url as creator_avatar,
       COALESCE(json_agg(json_build_object('id', ic.id, 'content', ic.content, 'created_at', ic.created_at, 'user_id', ic.user_id,
@@ -37,17 +56,17 @@ router.get('/', requireAuth, async (req, res) => {
 });
 
 router.post('/', requireAuth, async (req: AuthRequest, res) => {
-  const { title, category, content, tags } = req.body;
+  const { title, category, content, tags } = parse(ideaSchema, req.body);
   const idea = await queryOne(
     'INSERT INTO ideas (title, category, content, tags, created_by) VALUES ($1,$2,$3,$4,$5) RETURNING *',
-    [title, category || 'duft', content, tags || [], req.user!.id]
+    [title, category, content, tags, req.user!.id]
   );
   res.status(201).json(idea);
 });
 
 router.put('/:id', requireAuth, async (req: AuthRequest, res) => {
+  const { title, category, content, tags } = parse(ideaSchema, req.body);
   if (!(await canModifyIdea(req, res))) return;
-  const { title, category, content, tags } = req.body;
   const idea = await queryOne(
     'UPDATE ideas SET title=$1, category=$2, content=$3, tags=$4, updated_at=NOW() WHERE id=$5 RETURNING *',
     [title, category, content, tags, req.params.id]
@@ -62,7 +81,7 @@ router.delete('/:id', requireAuth, async (req: AuthRequest, res) => {
 });
 
 router.post('/:id/comments', requireAuth, async (req: AuthRequest, res) => {
-  const { content } = req.body;
+  const { content } = parse(commentSchema, req.body);
   const comment = await queryOne(
     'INSERT INTO idea_comments (idea_id, user_id, content) VALUES ($1,$2,$3) RETURNING *',
     [req.params.id, req.user!.id, content]

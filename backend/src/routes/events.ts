@@ -1,8 +1,32 @@
-import { Router } from 'express';
+import { z } from 'zod';
 import { query, queryOne } from '../db/client';
 import { requireAuth, AuthRequest } from '../middleware/auth';
+import { createRouter } from '../lib/errors';
+import { parse, validateParams, uuid, optUuid, optText, time, optTime, date, scentList } from '../lib/validation';
 
-const router = Router();
+const router = createRouter();
+validateParams(router);
+
+const STATUSES = ['geplant', 'läuft', 'fertig', 'abgesagt'] as const;
+
+const scheduleSchema = z.object({
+  sauna_id: uuid,
+  template_id: optUuid,
+  assigned_user_id: optUuid,
+  custom_name: optText(200),
+  custom_subtitle: optText(200),
+  start_time: time,
+  end_time: optTime,
+  status: z.preprocess(v => (v === '' || v == null ? undefined : v), z.enum(STATUSES).default('geplant')),
+});
+
+const eventSchema = z.object({
+  event_date: date,
+  title: optText(200),
+  notes: optText(),
+});
+
+const rangeQuerySchema = z.object({ from: date, to: date });
 
 /** Führt eine SQL-Abfrage aus – entweder über den Pool oder innerhalb einer Transaktion */
 export type Querier = (text: string, params?: any[]) => Promise<any[]>;
@@ -68,12 +92,7 @@ export async function checkConflicts(
 // Übersicht: Anzahl Aufgüsse je Tag in einem Zeitraum (für Wochenleiste / Vorlagen-Anwendung)
 router.get('/', requireAuth, async (req, res, next) => {
   try {
-    const { from, to } = req.query as { from?: string; to?: string };
-    const dateRe = /^\d{4}-\d{2}-\d{2}$/;
-    if (!from || !to || !dateRe.test(from) || !dateRe.test(to)) {
-      res.status(400).json({ error: 'from und to (YYYY-MM-DD) sind erforderlich' });
-      return;
-    }
+    const { from, to } = parse(rangeQuerySchema, req.query);
     const rows = await query(`
       SELECT TO_CHAR(e.event_date, 'YYYY-MM-DD') as date, COUNT(s.id)::int as count
       FROM events e
@@ -134,7 +153,7 @@ router.get('/:date', async (req, res, next) => {
 });
 
 router.post('/', requireAuth, async (req: AuthRequest, res) => {
-  const { event_date, title, notes } = req.body;
+  const { event_date, title, notes } = parse(eventSchema, req.body);
   const event = await queryOne(
     'INSERT INTO events (event_date, title, notes, created_by) VALUES ($1,$2,$3,$4) ON CONFLICT (event_date) DO UPDATE SET title=EXCLUDED.title, notes=EXCLUDED.notes RETURNING *',
     [event_date, title, notes, req.user!.id]
@@ -145,8 +164,8 @@ router.post('/', requireAuth, async (req: AuthRequest, res) => {
 // Aufguss zum Plan hinzufügen
 router.post('/:date/schedule', requireAuth, async (req: AuthRequest, res, next) => {
   try {
-    const { sauna_id, template_id, assigned_user_id, custom_name, custom_subtitle, start_time, end_time } = req.body;
-    const conflict = await checkConflicts(req.params.date, sauna_id, assigned_user_id || null, start_time, end_time || null);
+    const { sauna_id, template_id, assigned_user_id, custom_name, custom_subtitle, start_time, end_time } = parse(scheduleSchema, req.body);
+    const conflict = await checkConflicts(req.params.date, sauna_id, assigned_user_id, start_time, end_time);
     if (conflict) { res.status(409).json({ error: conflict }); return; }
     let event = await queryOne<any>('SELECT id FROM events WHERE event_date=$1', [req.params.date]);
     if (!event) {
@@ -155,7 +174,7 @@ router.post('/:date/schedule', requireAuth, async (req: AuthRequest, res, next) 
     const entry = await queryOne(
       `INSERT INTO aufguss_schedule (event_id, sauna_id, template_id, assigned_user_id, custom_name, custom_subtitle, start_time, end_time)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
-      [event!.id, sauna_id, template_id || null, assigned_user_id || null, custom_name, custom_subtitle, start_time, end_time]
+      [event!.id, sauna_id, template_id, assigned_user_id, custom_name, custom_subtitle, start_time, end_time]
     );
     res.status(201).json(entry);
   } catch (err) { next(err); }
@@ -164,14 +183,13 @@ router.post('/:date/schedule', requireAuth, async (req: AuthRequest, res, next) 
 // Aufguss im Plan aktualisieren
 router.put('/:date/schedule/:scheduleId', requireAuth, async (req, res, next) => {
   try {
-    const { sauna_id, template_id, assigned_user_id, custom_name, custom_subtitle, start_time, end_time, status } = req.body;
-    if (!start_time) { res.status(400).json({ error: 'Startzeit ist erforderlich' }); return; }
-    const conflict = await checkConflicts(req.params.date, sauna_id, assigned_user_id || null, start_time, end_time || null, req.params.scheduleId);
+    const { sauna_id, template_id, assigned_user_id, custom_name, custom_subtitle, start_time, end_time, status } = parse(scheduleSchema, req.body);
+    const conflict = await checkConflicts(req.params.date, sauna_id, assigned_user_id, start_time, end_time, req.params.scheduleId);
     if (conflict) { res.status(409).json({ error: conflict }); return; }
     const entry = await queryOne(
       `UPDATE aufguss_schedule SET sauna_id=$1, template_id=$2, assigned_user_id=$3, custom_name=$4,
        custom_subtitle=$5, start_time=$6, end_time=$7, status=$8 WHERE id=$9 RETURNING *`,
-      [sauna_id, template_id || null, assigned_user_id || null, custom_name || null, custom_subtitle || null, start_time, end_time || null, status ?? 'geplant', req.params.scheduleId]
+      [sauna_id, template_id, assigned_user_id, custom_name, custom_subtitle, start_time, end_time, status, req.params.scheduleId]
     );
     if (!entry) { res.status(404).json({ error: 'Aufguss nicht gefunden' }); return; }
     res.json(entry);
@@ -243,9 +261,9 @@ router.get('/:date/schedule/:scheduleId/scents', requireAuth, async (req, res, n
 
 // Düfte zu einem geplanten Aufguss hinzufügen
 router.post('/:date/schedule/:scheduleId/scents', requireAuth, async (req: AuthRequest, res) => {
-  const { scents } = req.body; // Array of { scent_id, dosage_ml?, dosage_note? }
+  const scents = parse(z.object({ scents: scentList }), req.body).scents.filter(s => s.scent_id);
   await query('DELETE FROM schedule_scents WHERE schedule_id=$1', [req.params.scheduleId]);
-  if (scents?.length) {
+  if (scents.length) {
     for (let i = 0; i < scents.length; i++) {
       const s = scents[i];
       await query(

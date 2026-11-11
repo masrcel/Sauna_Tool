@@ -1,8 +1,19 @@
-import { Router } from 'express';
+import { z } from 'zod';
 import { query, queryOne } from '../db/client';
 import { requireAuth, AuthRequest } from '../middleware/auth';
+import { createRouter, HttpError } from '../lib/errors';
+import { parse, validateParams, text, optText, intWithDefault, scentList } from '../lib/validation';
 
-const router = Router();
+const router = createRouter();
+validateParams(router);
+
+const templateSchema = z.object({
+  name: text(200),
+  subtitle: optText(200),
+  description: optText(),
+  duration_minutes: intWithDefault(15, 1, 600),
+  scents: scentList,
+});
 
 router.get('/', requireAuth, async (_, res) => {
   const templates = await query(`
@@ -23,35 +34,36 @@ router.get('/', requireAuth, async (_, res) => {
 });
 
 router.post('/', requireAuth, async (req: AuthRequest, res) => {
-  const { name, subtitle, description, duration_minutes, scents } = req.body;
+  const { name, subtitle, description, duration_minutes, scents } = parse(templateSchema, req.body);
   const template = await queryOne(
     'INSERT INTO aufguss_templates (name, subtitle, description, duration_minutes, created_by) VALUES ($1,$2,$3,$4,$5) RETURNING *',
-    [name, subtitle, description, duration_minutes ?? 15, req.user!.id]
+    [name, subtitle, description, duration_minutes, req.user!.id]
   );
-  const validScents = (scents ?? []).filter((s: any) => s.scent_id);
+  const validScents = scents.filter(s => s.scent_id);
   for (let i = 0; i < validScents.length; i++) {
     const s = validScents[i];
     await query(
       'INSERT INTO template_scents (template_id, scent_id, dosage_ml, dosage_note, sort_order) VALUES ($1,$2,$3,$4,$5)',
-      [template!.id, s.scent_id, s.dosage_ml || null, s.dosage_note || null, i]
+      [template!.id, s.scent_id, s.dosage_ml, s.dosage_note, i]
     );
   }
   res.status(201).json(template);
 });
 
 router.put('/:id', requireAuth, async (req: AuthRequest, res) => {
-  const { name, subtitle, description, duration_minutes, scents } = req.body;
+  const { name, subtitle, description, duration_minutes, scents } = parse(templateSchema, req.body);
   const template = await queryOne(
     'UPDATE aufguss_templates SET name=$1, subtitle=$2, description=$3, duration_minutes=$4, updated_at=NOW() WHERE id=$5 RETURNING *',
-    [name, subtitle, description, duration_minutes ?? 15, req.params.id]
+    [name, subtitle, description, duration_minutes, req.params.id]
   );
+  if (!template) throw new HttpError(404, 'Vorlage nicht gefunden');
   await query('DELETE FROM template_scents WHERE template_id=$1', [req.params.id]);
-  const validScents = (scents ?? []).filter((s: any) => s.scent_id);
+  const validScents = scents.filter(s => s.scent_id);
   for (let i = 0; i < validScents.length; i++) {
     const s = validScents[i];
     await query(
       'INSERT INTO template_scents (template_id, scent_id, dosage_ml, dosage_note, sort_order) VALUES ($1,$2,$3,$4,$5)',
-      [req.params.id, s.scent_id, s.dosage_ml || null, s.dosage_note || null, i]
+      [req.params.id, s.scent_id, s.dosage_ml, s.dosage_note, i]
     );
   }
   res.json(template);

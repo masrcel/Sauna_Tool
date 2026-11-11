@@ -67,11 +67,24 @@ function AvatarUpload({ user, onUploaded }: { user: User; onUploaded: () => void
   const inputRef = useRef<HTMLInputElement>(null);
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
+    if (!['image/jpeg', 'image/png'].includes(file.type)) {
+      alert('Nur Bilder im Format JPG oder PNG sind erlaubt.');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Das Bild darf maximal 5 MB groß sein.');
+      return;
+    }
     const fd = new FormData();
     fd.append('avatar', file);
-    await api.post(`/users/${user.id}/avatar`, fd);
-    onUploaded();
+    try {
+      await api.post(`/users/${user.id}/avatar`, fd);
+      onUploaded();
+    } catch (err: any) {
+      alert(`Fehler beim Hochladen: ${err.response?.data?.error ?? err.message}`);
+    }
   }
   return (
     <div className="relative group cursor-pointer" onClick={() => inputRef.current?.click()}>
@@ -79,7 +92,7 @@ function AvatarUpload({ user, onUploaded }: { user: User; onUploaded: () => void
       <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
         <Upload className="w-4 h-4 text-white" />
       </div>
-      <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+      <input ref={inputRef} type="file" accept="image/jpeg,image/png,.jpg,.jpeg,.png" className="hidden" onChange={handleFile} />
     </div>
   );
 }
