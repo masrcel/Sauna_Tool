@@ -3,10 +3,11 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../hooks/useAuth';
 import Avatar from '../../components/Avatar';
 import {
-  CalendarDays, Lightbulb, Users, Thermometer, Droplets, BookMarked, LogOut, Monitor, Settings
+  CalendarDays, Lightbulb, Users, Thermometer, Droplets, BookMarked, LogOut, Monitor, Settings, History
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { api } from '../../lib/api';
+import { APP_VERSION } from '../../lib/changelog';
 
 const nav = [
   { to: 'plan',        label: 'Tagesplan',   icon: CalendarDays },
@@ -16,6 +17,7 @@ const nav = [
   { to: 'saunen',      label: 'Saunen',      icon: Thermometer },
   { to: 'duefte',      label: 'Düfte',       icon: Droplets },
   { to: 'einstellungen', label: 'Einstellungen', icon: Settings },
+  { to: 'versionen',   label: 'Versionen',   icon: History },
 ];
 
 export default function AdminLayout() {
@@ -45,7 +47,12 @@ export default function AdminLayout() {
           }
           <div className="min-w-0">
             <h1 className="font-display text-base font-bold text-gray-900 dark:text-stone-100 truncate">{appName}</h1>
-            <p className="text-gray-400 dark:text-stone-500 text-xs">Admin</p>
+            <p className="text-gray-400 dark:text-stone-500 text-xs">
+              Admin ·{' '}
+              <NavLink to="versionen" className="font-mono hover:text-sauna-600 dark:hover:text-sauna-400 transition-colors" title="Versionshistorie">
+                v{APP_VERSION}
+              </NavLink>
+            </p>
           </div>
         </div>
 

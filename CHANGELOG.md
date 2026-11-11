@@ -7,6 +7,9 @@ Versionierung nach [Semantic Versioning](https://semver.org/lang/de/):
 `MAJOR` = inkompatible Änderungen (z. B. Datenbank/.env muss angepasst werden),
 `MINOR` = neue Funktionen, `PATCH` = Fehlerbehebungen.
 
+> **Bei jeder neuen Version auch pflegen:** `frontend/src/lib/changelog.ts` (Anzeige im
+> Admin-Panel unter „Versionen“) und `"version"` in den drei `package.json`.
+
 ---
 
 ## [Unveröffentlicht]
@@ -27,6 +30,8 @@ _Noch keine Änderungen._
 - **Personal-Display:** Abgeschlossene Aufgüsse erscheinen in einem eigenen, ein-/ausklappbaren
   Bereich (zuletzt beendete zuerst).
 - **Personal-Display:** Hinweis „Alle Aufgüsse für heute sind abgeschlossen“, wenn nichts mehr ansteht.
+- **Admin-Panel:** Seite „Versionen“ (`/admin/versionen`) mit Versionshistorie; aktuelle Version
+  wird in der Sidebar angezeigt.
 
 ### Geändert
 - Countdown-Hilfsfunktionen (`secondsUntil`, `formatCountdown`) nach `frontend/src/lib/utils.ts`

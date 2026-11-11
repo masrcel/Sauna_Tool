@@ -11,6 +11,7 @@ import AdminSaunen from './pages/admin/AdminSaunen';
 import AdminDuefte from './pages/admin/AdminDuefte';
 import AdminVorlagen from './pages/admin/AdminVorlagen';
 import AdminEinstellungen from './pages/admin/AdminEinstellungen';
+import AdminVersionen from './pages/admin/AdminVersionen';
 import { useAuth } from './hooks/useAuth';
 import { applyTheme, applyThemeMode, DEFAULT_PRIMARY } from './lib/theme';
 import { api } from './lib/api';
@@ -57,6 +58,7 @@ export default function App() {
           <Route path="duefte" element={<AdminDuefte />} />
           <Route path="vorlagen" element={<AdminVorlagen />} />
           <Route path="einstellungen" element={<AdminEinstellungen />} />
+          <Route path="versionen" element={<AdminVersionen />} />
         </Route>
       </Routes>
     </BrowserRouter>
