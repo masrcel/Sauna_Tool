@@ -10,19 +10,24 @@ import { cn } from '../../lib/utils';
 import { api } from '../../lib/api';
 import { APP_VERSION } from '../../lib/changelog';
 
+// adminOnly: nur für Rolle „admin“ sichtbar (Rechte werden zusätzlich im Backend geprüft)
 const nav = [
   { to: 'plan',        label: 'Tagesplan',   icon: CalendarDays },
   { to: 'vorlagen',    label: 'Vorlagen',    icon: BookMarked },
   { to: 'ideen',       label: 'Ideen',       icon: Lightbulb },
   { to: 'mitarbeiter', label: 'Mitarbeiter', icon: Users },
-  { to: 'saunen',      label: 'Saunen',      icon: Thermometer },
+  { to: 'saunen',      label: 'Saunen',      icon: Thermometer, adminOnly: true },
   { to: 'duefte',      label: 'Düfte',       icon: Droplets },
-  { to: 'einstellungen', label: 'Einstellungen', icon: Settings },
+  { to: 'einstellungen', label: 'Einstellungen', icon: Settings, adminOnly: true },
   { to: 'versionen',   label: 'Versionen',   icon: History },
 ];
 
 export default function AdminLayout() {
-  const { user, logout } = useAuth();
+  const { user, isAdmin, logout, refresh } = useAuth();
+  const visibleNav = nav.filter(n => isAdmin || !n.adminOnly);
+
+  // Rolle/Name beim Öffnen frisch vom Server holen (z. B. nach Rollenänderung durch einen Admin)
+  useEffect(() => { refresh().catch(() => {}); }, [refresh]);
   const navigate = useNavigate();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -86,7 +91,7 @@ export default function AdminLayout() {
           <div className="min-w-0 flex-1">
             <h1 className="font-display text-base font-bold text-gray-900 dark:text-stone-100 truncate">{appName}</h1>
             <p className="text-gray-400 dark:text-stone-500 text-xs">
-              Admin ·{' '}
+              {isAdmin ? 'Admin' : 'Personal'} ·{' '}
               <NavLink to="versionen" className="font-mono hover:text-sauna-600 dark:hover:text-sauna-400 transition-colors" title="Versionshistorie">
                 v{APP_VERSION}
               </NavLink>
@@ -98,7 +103,7 @@ export default function AdminLayout() {
         </div>
 
         <nav className="flex-1 px-3 py-4 flex flex-col gap-1">
-          {nav.map(({ to, label, icon: Icon }) => (
+          {visibleNav.map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
               to={to}
@@ -131,7 +136,7 @@ export default function AdminLayout() {
           {user && <Avatar name={user.name} url={user.avatar_url} size="sm" />}
           <div className="flex-1 min-w-0">
             <p className="text-gray-800 dark:text-stone-200 text-sm font-medium truncate">{user?.name}</p>
-            <p className="text-gray-400 dark:text-stone-500 text-xs truncate">{user?.role}</p>
+            <p className="text-gray-400 dark:text-stone-500 text-xs truncate">{isAdmin ? 'Admin' : 'Personal'}</p>
           </div>
           <button onClick={handleLogout} className="p-2 -m-2 text-gray-400 hover:text-red-500 dark:text-stone-500 dark:hover:text-red-400 transition-colors" title="Abmelden">
             <LogOut className="w-4 h-4" />

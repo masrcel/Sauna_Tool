@@ -4,9 +4,11 @@ import { api } from '../../lib/api';
 import { User } from '../../types';
 import Avatar from '../../components/Avatar';
 import { Plus, Upload, Pencil, UserX } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
 
 export default function AdminMitarbeiter() {
   const qc = useQueryClient();
+  const { user: me, isAdmin, refresh } = useAuth();
   const [showForm, setShowForm] = useState(false);
   const [editUser, setEditUser] = useState<User | null>(null);
 
@@ -23,13 +25,15 @@ export default function AdminMitarbeiter() {
     <div className="p-4 sm:p-6 flex flex-col gap-4 sm:gap-6">
       <div className="page-header">
         <h2 className="font-display text-2xl font-bold">Mitarbeiter</h2>
-        <button onClick={() => setShowForm(true)} className="btn-primary flex items-center gap-2"><Plus className="w-4 h-4" /> Mitarbeiter anlegen</button>
+        {isAdmin && <button onClick={() => setShowForm(true)} className="btn-primary flex items-center gap-2"><Plus className="w-4 h-4" /> Mitarbeiter anlegen</button>}
       </div>
 
       <div className="grid grid-cols-1 gap-3">
         {users.map(u => (
           <div key={u.id} className="card p-3 sm:p-4 flex items-center gap-3 sm:gap-4">
-            <AvatarUpload user={u} onUploaded={() => qc.invalidateQueries({ queryKey: ['users'] })} />
+            {isAdmin || u.id === me?.id
+              ? <AvatarUpload user={u} onUploaded={() => { qc.invalidateQueries({ queryKey: ['users'] }); if (u.id === me?.id) refresh().catch(() => {}); }} />
+              : <Avatar name={u.name} url={u.avatar_url} size="lg" />}
             <div className="flex-1 min-w-0">
               <p className="text-gray-900 dark:text-stone-100 font-semibold truncate">{u.name}</p>
               <p className="text-gray-400 dark:text-stone-500 text-sm truncate">{u.email}</p>
@@ -38,15 +42,17 @@ export default function AdminMitarbeiter() {
               </span>
             </div>
             {!u.active && <span className="badge bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 text-xs">Inaktiv</span>}
-            <div className="flex flex-col sm:flex-row gap-2 shrink-0">
-              <button onClick={() => setEditUser(u)} className="btn-secondary p-2"><Pencil className="w-4 h-4" /></button>
-              <button onClick={() => { if (confirm(`${u.name} deaktivieren?`)) deactivateMutation.mutate(u.id); }} className="btn-danger p-2"><UserX className="w-4 h-4" /></button>
-            </div>
+            {isAdmin && (
+              <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+                <button onClick={() => setEditUser(u)} className="btn-secondary p-2"><Pencil className="w-4 h-4" /></button>
+                <button onClick={() => { if (confirm(`${u.name} deaktivieren?`)) deactivateMutation.mutate(u.id); }} className="btn-danger p-2"><UserX className="w-4 h-4" /></button>
+              </div>
+            )}
           </div>
         ))}
       </div>
 
-      {(showForm || editUser) && (
+      {isAdmin && (showForm || editUser) && (
         <UserForm
           user={editUser}
           onSubmit={d => editUser ? updateMutation.mutate({ ...d, id: editUser.id }) : addMutation.mutate(d)}

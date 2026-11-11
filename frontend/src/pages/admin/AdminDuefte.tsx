@@ -3,12 +3,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
 import { Scent } from '../../types';
 import { Plus, Pencil, Trash2, Search, X } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
 
 const CATEGORIES = ['fruchtig', 'holzig', 'blumig', 'medizinisch', 'würzig', 'frisch', 'orientalisch', 'sonstiges'];
 const UNITS = ['ml', 'g', 'Tropfen'];
 
 export default function AdminDuefte() {
   const qc = useQueryClient();
+  const { isAdmin } = useAuth();
   const [showForm, setShowForm] = useState(false);
   const [editScent, setEditScent] = useState<Scent | null>(null);
   const [filterCat, setFilterCat] = useState('');
@@ -128,7 +130,7 @@ export default function AdminDuefte() {
                 </div>
                 <div className="flex gap-2 shrink-0">
                   <button onClick={() => setEditScent(s)} className="btn-secondary p-2"><Pencil className="w-4 h-4" /></button>
-                  <button onClick={() => { if (confirm(`Duft „${s.name}" löschen?`)) deleteMutation.mutate({ id: s.id }); }} className="btn-danger p-2"><Trash2 className="w-4 h-4" /></button>
+                  {isAdmin && <button onClick={() => { if (confirm(`Duft „${s.name}" löschen?`)) deleteMutation.mutate({ id: s.id }); }} className="btn-danger p-2"><Trash2 className="w-4 h-4" /></button>}
                 </div>
               </div>
             ))}

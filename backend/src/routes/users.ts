@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import multer from 'multer';
 import path from 'path';
 import { query, queryOne } from '../db/client';
-import { requireAdmin, requireAuth, AuthRequest } from '../middleware/auth';
+import { requireAdmin, requireAuth, isAdmin, AuthRequest } from '../middleware/auth';
 
 const router = Router();
 
@@ -49,7 +49,16 @@ router.put('/:id', requireAdmin, async (req: AuthRequest, res) => {
   res.json(user);
 });
 
-router.post('/:id/avatar', requireAuth, upload.single('avatar'), async (req: AuthRequest, res) => {
+// Eigenes Profilfoto: jeder; fremde Profilfotos: nur Admins (Prüfung vor dem Upload)
+function canEditAvatar(req: AuthRequest, res: any, next: any) {
+  if (!isAdmin(req) && req.params.id !== req.user!.id) {
+    res.status(403).json({ error: 'Du darfst nur dein eigenes Profilbild ändern' });
+    return;
+  }
+  next();
+}
+
+router.post('/:id/avatar', requireAuth, canEditAvatar, upload.single('avatar'), async (req: AuthRequest, res) => {
   if (!req.file) { res.status(400).json({ error: 'Kein Bild hochgeladen' }); return; }
   const url = `/uploads/avatars/${req.file.filename}`;
   await query('UPDATE users SET avatar_url=$1 WHERE id=$2', [url, req.params.id]);

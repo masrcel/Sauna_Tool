@@ -14,7 +14,19 @@ Versionierung nach [Semantic Versioning](https://semver.org/lang/de/):
 
 ## [Unveröffentlicht]
 
-_Noch keine Änderungen._
+### Geändert
+- **Berechtigungen, Admin-Panel:** Personal sieht nur noch, was es darf. Saunen und Einstellungen
+  sind ausgeblendet (auch per direkter URL gesperrt), ebenso Knöpfe für Admin-Aktionen
+  (Mitarbeiter anlegen/bearbeiten/deaktivieren, Duft löschen). Versionen sieht jeder.
+- **Ideen:** Alle sehen alle Ideen und können kommentieren. Bearbeiten und Löschen nur noch durch
+  den Ersteller oder einen Admin. Kommentare lassen sich löschen (eigene; Admins alle).
+- **Profilfotos:** Jeder darf nur sein eigenes Foto ändern, Admins alle.
+
+### Behoben
+- **Sicherheit:** Deaktivierte Mitarbeiter blieben bis zu 7 Tage angemeldet, Rollenänderungen
+  griffen erst nach erneutem Login. Konto und Rolle werden jetzt bei jeder Anfrage geprüft.
+- **Sicherheit:** Personal konnte Profilfotos anderer Mitarbeiter ändern sowie fremde Ideen
+  bearbeiten und löschen.
 
 ---
 

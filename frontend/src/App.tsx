@@ -22,6 +22,12 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function AdminOnlyRoute({ children }: { children: React.ReactNode }) {
+  const { isAdmin } = useAuth();
+  if (!isAdmin) return <Navigate to="/admin/plan" replace />;
+  return <>{children}</>;
+}
+
 export default function App() {
   useEffect(() => {
     let cleanup: (() => void) | undefined;
@@ -54,10 +60,10 @@ export default function App() {
           <Route path="plan" element={<AdminPlan />} />
           <Route path="ideen" element={<AdminIdeen />} />
           <Route path="mitarbeiter" element={<AdminMitarbeiter />} />
-          <Route path="saunen" element={<AdminSaunen />} />
+          <Route path="saunen" element={<AdminOnlyRoute><AdminSaunen /></AdminOnlyRoute>} />
           <Route path="duefte" element={<AdminDuefte />} />
           <Route path="vorlagen" element={<AdminVorlagen />} />
-          <Route path="einstellungen" element={<AdminEinstellungen />} />
+          <Route path="einstellungen" element={<AdminOnlyRoute><AdminEinstellungen /></AdminOnlyRoute>} />
           <Route path="versionen" element={<AdminVersionen />} />
         </Route>
       </Routes>

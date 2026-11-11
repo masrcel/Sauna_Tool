@@ -13,7 +13,7 @@ import { useAuth } from '../../hooks/useAuth';
 const CATEGORIES = ['duft', 'zeremonie', 'musik', 'sonstiges'] as const;
 
 export default function AdminIdeen() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const qc = useQueryClient();
   const [category, setCategory] = useState('');
   const [search, setSearch] = useState('');
@@ -37,6 +37,10 @@ export default function AdminIdeen() {
   const addMutation = useMutation({ mutationFn: (d: any) => api.post('/ideas', d), onSuccess: () => { qc.invalidateQueries({ queryKey: ['ideas'] }); setShowForm(false); } });
   const updateMutation = useMutation({ mutationFn: ({ id, ...d }: any) => api.put(`/ideas/${id}`, d), onSuccess: () => { qc.invalidateQueries({ queryKey: ['ideas'] }); setEditIdea(null); } });
   const deleteMutation = useMutation({ mutationFn: (id: string) => api.delete(`/ideas/${id}`), onSuccess: () => qc.invalidateQueries({ queryKey: ['ideas'] }) });
+  const deleteCommentMutation = useMutation({
+    mutationFn: ({ id, commentId }: { id: string; commentId: string }) => api.delete(`/ideas/${id}/comments/${commentId}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['ideas'] }),
+  });
   const commentMutation = useMutation({
     mutationFn: ({ id, content }: { id: string; content: string }) => api.post(`/ideas/${id}/comments`, { content }),
     onSuccess: (_data, vars) => { qc.invalidateQueries({ queryKey: ['ideas'] }); setComment(vars.id, ''); },
@@ -80,10 +84,10 @@ export default function AdminIdeen() {
                 </div>
                 <h3 className="font-display text-lg font-semibold text-gray-900 dark:text-stone-100">{idea.title}</h3>
               </div>
-              <div className="flex gap-2 shrink-0">
+              {(isAdmin || idea.created_by === user?.id) && <div className="flex gap-2 shrink-0">
                 <button onClick={() => setEditIdea(idea)} className="p-1 text-gray-400 hover:text-gray-700 dark:text-stone-500 dark:hover:text-stone-200"><Pencil className="w-4 h-4" /></button>
                 <button onClick={() => { if (confirm('Idee löschen?')) deleteMutation.mutate(idea.id); }} className="p-1 text-gray-400 hover:text-red-500 dark:text-stone-500 dark:hover:text-red-400"><Trash2 className="w-4 h-4" /></button>
-              </div>
+              </div>}
             </div>
 
             <p className="text-gray-700 dark:text-stone-300 text-sm whitespace-pre-wrap leading-relaxed">{idea.content}</p>
@@ -115,6 +119,9 @@ export default function AdminIdeen() {
                       <p className="text-gray-700 dark:text-stone-300 text-xs font-medium mb-0.5">{c.user_name}</p>
                       <p className="text-gray-500 dark:text-stone-400 text-sm">{c.content}</p>
                     </div>
+                    {(isAdmin || c.user_id === user?.id) && (
+                      <button onClick={() => { if (confirm('Kommentar löschen?')) deleteCommentMutation.mutate({ id: idea.id, commentId: c.id }); }} className="p-1 self-start text-gray-400 hover:text-red-500 dark:text-stone-500 dark:hover:text-red-400" title="Kommentar löschen"><Trash2 className="w-3.5 h-3.5" /></button>
+                    )}
                   </div>
                 ))}
                 <div className="flex gap-2 mt-1">

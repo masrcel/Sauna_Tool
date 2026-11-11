@@ -94,32 +94,39 @@ Die Displays (`/` und `/personal`) sind ohne Login erreichbar und zeigen nur Dat
 | **Tagesplan** | Ansehen (Displays) | ✅ | ✅ | ✅ |
 | | Aufgüsse anlegen, ändern, löschen, Düfte zuweisen | – | ✅ | ✅ |
 | **Vorlagen** | Ansehen, anlegen, ändern, löschen | – | ✅ | ✅ |
-| **Ideen** | Ansehen, anlegen, ändern, löschen | – | ✅ | ✅ |
+| **Ideen** | Alle Ideen ansehen, neue anlegen | – | ✅ | ✅ |
+| | Ändern, löschen | – | nur eigene | alle |
 | | Kommentieren | – | ✅ | ✅ |
-| | Kommentar löschen | – | nur eigene | nur eigene |
+| | Kommentar löschen | – | nur eigene | alle |
 | **Düfte** | Ansehen | ✅ | ✅ | ✅ |
 | | Anlegen, ändern | – | ✅ | ✅ |
 | | Löschen | – | – | ✅ |
 | **Saunen** | Ansehen | ✅ | ✅ | ✅ |
 | | Anlegen, ändern, löschen | – | – | ✅ |
 | **Mitarbeiter** | Liste ansehen | – | ✅ | ✅ |
-| | Profilfoto hochladen | – | ✅ | ✅ |
+| | Profilfoto ändern | – | nur eigenes | alle |
 | | Anlegen, bearbeiten, Rolle/Passwort ändern, deaktivieren | – | – | ✅ |
 | **Einstellungen** | Lesen (Name, Farbe, Logo) | ✅ | ✅ | ✅ |
 | | Ändern | – | – | ✅ |
 | **Versionen** | Ansehen | – | ✅ | ✅ |
 
 ### Hinweise
-- Die Rechte werden im **Backend** geprüft. Das Admin-Panel zeigt Personal alle Menüpunkte;
-  nicht erlaubte Aktionen werden mit „Keine Berechtigung“ (HTTP 403) abgelehnt.
-- Mitarbeiter werden nicht gelöscht, sondern **deaktiviert**. Deaktivierte Konten können sich
-  nicht mehr anmelden; ein bereits ausgestelltes Login-Token bleibt aber bis zu **7 Tage** gültig.
+- Personal sieht im Admin-Panel nur, was es auch darf: Die Menüpunkte **Saunen** und
+  **Einstellungen** sowie Knöpfe für Admin-Aktionen (Mitarbeiter anlegen/bearbeiten, Duft löschen,
+  fremde Ideen bearbeiten …) sind ausgeblendet. Die Seite **Versionen** sieht jeder.
+- Zusätzlich prüft das **Backend** jede Anfrage; nicht erlaubte Aktionen werden mit HTTP 403 abgelehnt.
+- Mitarbeiter werden nicht gelöscht, sondern **deaktiviert**. Deaktivierung und Rollenänderungen
+  greifen **sofort**: Bei jeder Anfrage wird das Konto in der Datenbank geprüft, ein deaktivierter
+  Mitarbeiter wird beim nächsten Klick abgemeldet.
 - Der Standard-Admin `admin@sauna.local` wird beim ersten Start angelegt. Weitere Admins
   einfach unter **Mitarbeiter** mit Rolle **Admin** anlegen.
 
 ### API-Schutz (für Entwickler)
-- `requireAuth` — gültiger Login (beide Rollen), sonst `401`
-- `requireAdmin` — Rolle `admin`, sonst `403`
+- `requireAuth` — gültiges Token **und** aktives Konto in der DB (beide Rollen), sonst `401`.
+  Die Rolle wird dabei aus der DB gelesen, nicht aus dem Token.
+- `requireAdmin` — wie `requireAuth`, zusätzlich Rolle `admin`, sonst `403`
+- Eigentümer-Prüfungen: Ideen (`PUT`/`DELETE /api/ideas/:id`), Kommentare und Profilfotos
+  (`POST /api/users/:id/avatar`) — Ersteller bzw. die Person selbst oder ein Admin
 - Definiert in [backend/src/middleware/auth.ts](backend/src/middleware/auth.ts); Token: JWT, 7 Tage gültig,
   signiert mit `JWT_SECRET`.
 
