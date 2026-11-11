@@ -87,3 +87,9 @@ docker run -d --name sauna-db -e POSTGRES_DB=sauna_aufguss \
 cd backend && cp .env.example .env && npm install && npm run db:migrate && npm run dev
 cd frontend && npm install && npm run dev       # http://localhost:5173
 ```
+
+---
+
+## Versionshistorie
+
+Alle Änderungen je Version stehen in der [CHANGELOG.md](CHANGELOG.md).
