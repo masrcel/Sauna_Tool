@@ -33,7 +33,7 @@ async function migrate() {
   `, [hash]);
 
   console.log('Migration erfolgreich.');
-  console.log(`Admin-Login: admin@sauna.local / ${adminPassword}`);
+  console.log('Admin-Login: admin@sauna.local (Passwort aus ADMIN_PASSWORD)');
   await pool.end();
 }
 

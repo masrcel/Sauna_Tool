@@ -5,59 +5,56 @@ Digitales Aufguss-Planungssystem für Saunen. Drei Ansichten:
 - **`/personal`** — Personal-Display (öffentlich, kein Login)
 - **`/admin`** — Admin-Panel (Login erforderlich)
 
-## Schnellstart (Entwicklung)
-
-### Voraussetzungen
-- Node.js 20+
-- PostgreSQL (lokal oder via Docker)
-
-### 1. Datenbank starten (Docker)
-```bash
-docker run -d --name sauna-db -e POSTGRES_DB=sauna_aufguss \
-  -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres \
-  -p 5432:5432 postgres:16-alpine
-```
-
-### 2. Backend
-```bash
-cd backend
-cp .env.example .env        # ggf. anpassen
-npm install
-npm run db:migrate          # Schema + Admin-User anlegen
-npm run dev                 # läuft auf :3001
-```
-
-### 3. Frontend
-```bash
-cd frontend
-npm install
-npm run dev                 # läuft auf :5173
-```
-
-### Login
-- URL: http://localhost:5173/admin
-- E-Mail: `admin@sauna.local`
-- Passwort: `sauna2024` (oder ADMIN_PASSWORD aus .env)
+Live: **https://kropp.sauna-aufgussplan.de**
 
 ---
 
-## Produktion (Docker Compose)
+## Installation (Server)
+
+Voraussetzungen: Docker + Docker Compose, DNS-Eintrag der Domain zeigt auf den Server,
+Ports **80 und 443** sind offen.
 
 ```bash
-cp .env.example .env        # Werte anpassen (JWT_SECRET, ADMIN_PASSWORD, DOMAIN, LETSENCRYPT_EMAIL)
+cd ~/Software/sauna-aufguss-manager
+cp .env.example .env
+nano .env                   # alle leeren Werte ausfüllen
 docker compose up -d --build
 ```
 
-App läuft dann auf **HTTPS (Port 443)**, HTTP (Port 80) leitet automatisch um.
+Die `.env` muss **im selben Ordner wie `docker-compose.yml`** liegen. Fehlt ein Pflichtwert,
+bricht `docker compose` mit einer Meldung ab (z. B. `DOMAIN fehlt in .env`).
+
+Zufallswerte für `JWT_SECRET` / `POSTGRES_PASSWORD` erzeugen: `openssl rand -hex 32`
+
+### Login
+- URL: `https://[DOMAIN]/admin`
+- E-Mail: `admin@sauna.local`
+- Passwort: `ADMIN_PASSWORD` aus der `.env` (wird nur beim allerersten Start gesetzt)
+
+### Update einspielen
+```bash
+cd ~/Software/sauna-aufguss-manager
+git pull
+docker compose up -d --build
+```
 
 ### HTTPS / Let's Encrypt
-- Voraussetzung: DNS-Eintrag von `DOMAIN` zeigt auf den Server, Ports **80 und 443** sind offen.
 - Beim ersten Start nutzt nginx ein temporäres selbstsigniertes Zertifikat. Der `certbot`-Container
   holt dann das echte Zertifikat; nginx übernimmt es automatisch innerhalb von ~1 Minute.
 - Erneuerung läuft automatisch (certbot prüft alle 12h, nginx lädt alle 12h neu).
-- Zum Testen ohne Rate-Limits: `LETSENCRYPT_STAGING=1` in `.env` (danach Volume `letsencrypt` löschen, bevor auf echt umgestellt wird).
-- Logs: `docker compose logs -f certbot frontend`
-- Ohne `DOMAIN` (bzw. `localhost`) läuft lokal nur das selbstsignierte Zertifikat.
+- `LETSENCRYPT_STAGING=1` nur zum Testen (Zertifikat nicht vertrauenswürdig). Danach Volume
+  `letsencrypt` löschen, bevor auf `0` umgestellt wird.
+
+### Sicherheit
+- Datenbank (5432) und Backend (3001) sind **nicht** von außen erreichbar, nur über nginx.
+- `.env` nie ins Git einchecken (steht in `.gitignore`).
+
+### Logs & Fehlersuche
+```bash
+docker compose ps
+docker compose logs -f certbot frontend backend
+docker compose exec frontend env | grep DOMAIN    # muss die echte Domain zeigen
+```
 
 ---
 
@@ -79,8 +76,14 @@ App läuft dann auf **HTTPS (Port 443)**, HTTP (Port 80) leitet automatisch um.
 | Gäste-Display | `https://[DOMAIN]/` | Auto-Refresh alle 60s |
 | Personal-Display | `https://[DOMAIN]/personal` | Auto-Refresh alle 30s |
 
+---
 
-# Entwicklung Docker Neustart 
-cd ~/Software/sauna-aufguss-manager
-docker compose build --no-cache 
-docker compose up -d
+## Lokal testen (optional, ohne Docker)
+
+```bash
+docker run -d --name sauna-db -e POSTGRES_DB=sauna_aufguss \
+  -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres \
+  -p 5432:5432 postgres:16-alpine
+cd backend && cp .env.example .env && npm install && npm run db:migrate && npm run dev
+cd frontend && npm install && npm run dev       # http://localhost:5173
+```

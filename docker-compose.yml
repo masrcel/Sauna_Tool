@@ -1,31 +1,33 @@
+# Live-Betrieb. Alle Werte kommen aus der .env in diesem Ordner (Vorlage: .env.example).
+# Pflichtwerte (${VAR:?...}) fehlen -> docker compose bricht mit Fehlermeldung ab.
+
 services:
   db:
     image: postgres:16-alpine
     environment:
       POSTGRES_DB: sauna_aufguss
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD fehlt in .env}
       TZ: ${TZ:-Europe/Berlin}
       PGTZ: ${TZ:-Europe/Berlin}
     volumes:
       - pgdata:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+    # kein Port nach außen – nur intern für das Backend erreichbar
     restart: unless-stopped
 
   backend:
     build: ./backend
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/sauna_aufguss
-      JWT_SECRET: ${JWT_SECRET:-bitte-aendern-im-produktivbetrieb}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-sauna2024}
+      NODE_ENV: production
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@db:5432/sauna_aufguss
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET fehlt in .env}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?ADMIN_PASSWORD fehlt in .env}
       PORT: 3001
-      FRONTEND_URL: ${FRONTEND_URL:-https://${DOMAIN:-localhost}}
+      FRONTEND_URL: https://${DOMAIN}
       TZ: ${TZ:-Europe/Berlin}
     volumes:
       - uploads:/app/uploads
-    ports:
-      - "3001:3001"
+    # kein Port nach außen – erreichbar nur über nginx (/api, /uploads)
     depends_on:
       - db
     restart: unless-stopped
@@ -33,7 +35,7 @@ services:
   frontend:
     build: ./frontend
     environment:
-      DOMAIN: ${DOMAIN:-localhost}
+      DOMAIN: ${DOMAIN:?DOMAIN fehlt in .env}
     ports:
       - "80:80"
       - "443:443"
@@ -48,8 +50,8 @@ services:
     image: certbot/certbot:latest
     entrypoint: /bin/sh /entrypoint.sh
     environment:
-      DOMAIN: ${DOMAIN:-localhost}
-      LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL:-}
+      DOMAIN: ${DOMAIN:?DOMAIN fehlt in .env}
+      LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL:?LETSENCRYPT_EMAIL fehlt in .env}
       LETSENCRYPT_STAGING: ${LETSENCRYPT_STAGING:-0}
     volumes:
       - ./certbot/entrypoint.sh:/entrypoint.sh:ro
