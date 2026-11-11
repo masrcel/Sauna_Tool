@@ -5,6 +5,7 @@ import { api } from '../lib/api';
 import { DayEvent } from '../types';
 import AufgussCard from '../components/AufgussCard';
 import Avatar from '../components/Avatar';
+import ScentBadge from '../components/ScentBadge';
 import { useClock } from '../hooks/useClock';
 
 function useTodayEvent(dateStr: string) {
@@ -81,7 +82,7 @@ export default function GuestDisplay() {
                   {saunaNames[saunaId]}
                 </h2>
                 {entries.map(entry => (
-                  <AufgussCard key={entry.id} entry={{ ...entry, scents: [] }} showDetails={false} />
+                  <AufgussCard key={entry.id} entry={entry} showDetails={false} />
                 ))}
               </div>
             ))}
@@ -100,6 +101,13 @@ export default function GuestDisplay() {
               <p className="text-white font-display text-lg font-semibold">
                 {next.custom_name ?? next.template_name} — {next.start_time?.substring(0, 5)} Uhr
               </p>
+              {next.scents.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-1">
+                  {next.scents.map((s, i) => (
+                    <ScentBadge key={i} name={s.scent_name} color={s.color} size="sm" />
+                  ))}
+                </div>
+              )}
             </div>
             <div className="text-right">
               <span className="text-gray-300 text-sm">{next.sauna_name}</span>
