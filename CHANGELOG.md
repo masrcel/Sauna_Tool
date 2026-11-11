@@ -14,6 +14,13 @@ Versionierung nach [Semantic Versioning](https://semver.org/lang/de/):
 
 ## [Unveröffentlicht]
 
+---
+
+## [1.5.0] – 2026-11-11
+
+> **Update:** Die neuen Tabellen für Tagesvorlagen legt die Migration beim Start des
+> Backend-Containers automatisch an – `git pull` und `docker compose up -d --build` genügen.
+
 ### Hinzugefügt
 - **Tagesvorlagen:** Neuer Menüpunkt „Tagesvorlagen“. Ein kompletter Tagesablauf (Sauna, Zeiten,
   Mitarbeiter, Düfte je Aufguss) wird einmal angelegt und dann auf beliebige Tage übertragen.

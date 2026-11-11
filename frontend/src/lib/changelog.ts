@@ -23,6 +23,32 @@ export const CHANGE_TYPE_LABELS: Record<ChangeType, string> = {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '1.5.0',
+    date: '2026-11-11',
+    title: 'Tagesvorlagen & schneller Tageswechsel',
+    changes: {
+      added: [
+        'Tagesvorlagen: Einen kompletten Tagesablauf (Sauna, Zeiten, Mitarbeiter, Düfte) einmal anlegen und auf beliebige Tage übertragen – neuer Menüpunkt „Tagesvorlagen“.',
+        'Tagesplan: „Als Tagesvorlage speichern“ übernimmt einen fertig geplanten Tag als Vorlage.',
+        'Tagesplan: „Tagesvorlage anwenden“ auf den aktuellen Tag oder einen Zeitraum mit Wochentag-Auswahl, z. B. alle Samstage der nächsten 4 Wochen.',
+        'Beim Anwenden wählbar: bestehende Aufgüsse behalten oder ersetzen. Aufgüsse mit Zeitkonflikt werden übersprungen und danach aufgelistet.',
+        'Tagesvorlagen lassen sich bearbeiten, duplizieren und löschen.',
+        'Tagesplan: Datumsfeld „Gehe zu“ und Wochenleiste (Mo–So) mit Anzahl der Aufgüsse je Tag – kein Durchklicken mehr Tag für Tag.',
+        'Das gewählte Datum im Tagesplan bleibt beim Neuladen erhalten.',
+      ],
+      changed: [
+        'Menü: „Vorlagen“ heißt jetzt „Aufguss-Vorlagen“.',
+        'Personal sieht im Admin-Panel nur noch, was es darf: Saunen, Einstellungen und Admin-Knöpfe sind ausgeblendet.',
+        'Ideen: Alle sehen alle Ideen und können kommentieren; bearbeiten und löschen nur Ersteller oder Admin. Eigene Kommentare lassen sich löschen.',
+        'Profilfotos: Jeder ändert nur sein eigenes Foto, Admins alle.',
+      ],
+      security: [
+        'Deaktivierte Mitarbeiter werden sofort abgemeldet, Rollenänderungen greifen ohne erneuten Login.',
+        'Personal kann keine fremden Profilfotos und Ideen mehr ändern oder löschen.',
+      ],
+    },
+  },
+  {
     version: '1.4.0',
     date: '2026-11-11',
     title: 'Handy-Ansicht',
