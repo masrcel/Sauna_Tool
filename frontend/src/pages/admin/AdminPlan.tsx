@@ -1,20 +1,47 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { format, addDays, subDays } from 'date-fns';
+import { format, addDays, subDays, addWeeks, subWeeks, startOfWeek, parseISO, isValid, isSameDay } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { api } from '../../lib/api';
-import { DayEvent, AufgussTemplate, User, Sauna, ScheduleEntry, Scent } from '../../types';
+import { DayEvent, AufgussTemplate, User, Sauna, ScheduleEntry } from '../../types';
 import AufgussCard from '../../components/AufgussCard';
-import Avatar from '../../components/Avatar';
-import { ChevronLeft, ChevronRight, Plus, Trash2, Pencil } from 'lucide-react';
-import { formatTime } from '../../lib/utils';
+import ScheduleForm from '../../components/ScheduleForm';
+import { ApplyDayTemplateModal, SaveDayTemplateModal } from '../../components/DayTemplateModals';
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Plus, Trash2, Pencil, CalendarPlus, Save } from 'lucide-react';
+import { cn } from '../../lib/utils';
 
 export default function AdminPlan() {
-  const [date, setDate] = useState(new Date());
+  // Datum steht in der URL (?datum=YYYY-MM-DD) – bleibt beim Neuladen erhalten und ist verlinkbar
+  const [searchParams, setSearchParams] = useSearchParams();
+  const parsed = parseISO(searchParams.get('datum') ?? '');
+  const date = isValid(parsed) ? parsed : new Date();
+  const setDate = (next: Date | ((d: Date) => Date)) => {
+    const d = typeof next === 'function' ? next(date) : next;
+    setSearchParams(isSameDay(d, new Date()) ? {} : { datum: format(d, 'yyyy-MM-dd') }, { replace: true });
+  };
+
   const [showForm, setShowForm] = useState(false);
   const [editEntry, setEditEntry] = useState<ScheduleEntry | null>(null);
+  const [showApply, setShowApply] = useState(false);
+  const [showSaveTemplate, setShowSaveTemplate] = useState(false);
   const qc = useQueryClient();
   const dateStr = format(date, 'yyyy-MM-dd');
+
+  // Wochenleiste: Montag bis Sonntag der gewählten Woche, mit Anzahl geplanter Aufgüsse
+  const weekStart = startOfWeek(date, { weekStartsOn: 1 });
+  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+  const weekFrom = format(weekDays[0], 'yyyy-MM-dd');
+  const weekTo = format(weekDays[6], 'yyyy-MM-dd');
+  const { data: weekCounts = [] } = useQuery<{ date: string; count: number }[]>({
+    queryKey: ['event-summary', weekFrom, weekTo],
+    queryFn: async () => (await api.get('/events', { params: { from: weekFrom, to: weekTo } })).data,
+  });
+  const countFor = (d: Date) => weekCounts.find(c => c.date === format(d, 'yyyy-MM-dd'))?.count ?? 0;
+  const invalidateDay = () => {
+    qc.invalidateQueries({ queryKey: ['event-admin', dateStr] });
+    qc.invalidateQueries({ queryKey: ['event-summary'] });
+  };
 
   const { data: event } = useQuery<DayEvent | null>({
     queryKey: ['event-admin', dateStr],
@@ -47,7 +74,7 @@ export default function AdminPlan() {
       await saveScents(res.data.id, selectedScents ?? []);
       return res;
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['event-admin', dateStr] }); setShowForm(false); },
+    onSuccess: () => { invalidateDay(); setShowForm(false); },
     onError: (err: any) => alert(`Fehler beim Speichern: ${err.response?.data?.error ?? err.message}`),
   });
 
@@ -58,46 +85,107 @@ export default function AdminPlan() {
       await saveScents(id, selectedScents ?? []);
       return res;
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['event-admin', dateStr] }); setEditEntry(null); },
+    onSuccess: () => { invalidateDay(); setEditEntry(null); },
     onError: (err: any) => alert(`Fehler beim Speichern: ${err.response?.data?.error ?? err.message}`),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/events/${dateStr}/schedule/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['event-admin', dateStr] }),
+    onSuccess: invalidateDay,
     onError: (err: any) => alert(`Fehler beim Löschen: ${err.response?.data?.error ?? err.message}`),
   });
 
   const statusMutation = useMutation({
     mutationFn: ({ id, status, sauna_id, template_id, assigned_user_id, custom_name, custom_subtitle, start_time, end_time }: any) =>
       api.put(`/events/${dateStr}/schedule/${id}`, { sauna_id, template_id, assigned_user_id, custom_name, custom_subtitle, start_time, end_time, status }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['event-admin', dateStr] }); qc.invalidateQueries({ queryKey: ['event', dateStr] }); },
+    onSuccess: () => { invalidateDay(); qc.invalidateQueries({ queryKey: ['event', dateStr] }); },
     onError: (err: any) => alert(`Fehler: ${err.response?.data?.error ?? err.message}`),
   });
 
   return (
     <div className="p-4 sm:p-6 flex flex-col gap-4 sm:gap-6">
-      {/* Date Nav */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div className="flex items-center gap-2 sm:gap-4">
-          <button onClick={() => setDate(d => subDays(d, 1))} className="btn-secondary p-2" aria-label="Vorheriger Tag"><ChevronLeft className="w-4 h-4" /></button>
-          <div className="text-center flex-1 sm:flex-none min-w-0">
-            <p className="text-gray-500 dark:text-stone-400 text-sm">{format(date, 'EEEE', { locale: de })}</p>
-            <h2 className="font-display text-lg sm:text-xl font-bold text-gray-900 dark:text-stone-100">{format(date, 'dd. MMMM yyyy', { locale: de })}</h2>
+      {/* Datums-Navigation */}
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <button onClick={() => setDate(d => subDays(d, 1))} className="btn-secondary p-2" aria-label="Vorheriger Tag"><ChevronLeft className="w-4 h-4" /></button>
+            <div className="text-center flex-1 sm:flex-none min-w-0">
+              <p className="text-gray-500 dark:text-stone-400 text-sm">{format(date, 'EEEE', { locale: de })}</p>
+              <h2 className="font-display text-lg sm:text-xl font-bold text-gray-900 dark:text-stone-100">{format(date, 'dd. MMMM yyyy', { locale: de })}</h2>
+            </div>
+            <button onClick={() => setDate(d => addDays(d, 1))} className="btn-secondary p-2" aria-label="Nächster Tag"><ChevronRight className="w-4 h-4" /></button>
+            <button onClick={() => setDate(new Date())} className="btn-secondary text-sm">Heute</button>
           </div>
-          <button onClick={() => setDate(d => addDays(d, 1))} className="btn-secondary p-2" aria-label="Nächster Tag"><ChevronRight className="w-4 h-4" /></button>
-          <button onClick={() => setDate(new Date())} className="btn-secondary text-sm">Heute</button>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <label className="flex items-center gap-2">
+              <span className="text-sm text-gray-500 dark:text-stone-400 whitespace-nowrap">Gehe zu</span>
+              <input
+                type="date"
+                className="input py-1.5"
+                value={dateStr}
+                onChange={e => { const d = parseISO(e.target.value); if (isValid(d)) setDate(d); }}
+                aria-label="Datum auswählen"
+              />
+            </label>
+          </div>
         </div>
-        <button onClick={() => setShowForm(true)} className="btn-primary flex items-center justify-center gap-2">
-          <Plus className="w-4 h-4" /> Aufguss hinzufügen
-        </button>
+
+        {/* Wochenleiste */}
+        <div className="flex items-center gap-1 sm:gap-2">
+          <button onClick={() => setDate(d => subWeeks(d, 1))} className="btn-secondary p-2 shrink-0" aria-label="Vorherige Woche" title="Eine Woche zurück"><ChevronsLeft className="w-4 h-4" /></button>
+          <div className="grid grid-cols-7 gap-1 sm:gap-2 flex-1 min-w-0">
+            {weekDays.map(d => {
+              const selected = isSameDay(d, date);
+              const today = isSameDay(d, new Date());
+              const count = countFor(d);
+              return (
+                <button
+                  key={d.toISOString()}
+                  onClick={() => setDate(d)}
+                  className={cn(
+                    'flex flex-col items-center rounded-xl py-1.5 sm:py-2 text-xs sm:text-sm transition-colors border',
+                    selected
+                      ? 'bg-sauna-600 border-sauna-600 text-white'
+                      : 'bg-white border-gray-200 hover:bg-gray-100 text-gray-700 dark:bg-stone-900 dark:border-stone-800 dark:hover:bg-stone-800 dark:text-stone-300',
+                    today && !selected && 'border-sauna-500'
+                  )}
+                >
+                  <span className="uppercase text-[10px] sm:text-xs opacity-70">{format(d, 'EEEEEE', { locale: de })}</span>
+                  <span className="font-semibold tabular-nums">{format(d, 'd.')}</span>
+                  <span className={cn('text-[10px] leading-none mt-0.5 tabular-nums', count ? '' : 'opacity-0')}>
+                    {count} <span className="hidden sm:inline">Aufg.</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <button onClick={() => setDate(d => addWeeks(d, 1))} className="btn-secondary p-2 shrink-0" aria-label="Nächste Woche" title="Eine Woche vor"><ChevronsRight className="w-4 h-4" /></button>
+        </div>
+
+        {/* Aktionen */}
+        <div className="flex flex-col sm:flex-row sm:justify-end gap-2">
+          {event && event.schedule.length > 0 && (
+            <button onClick={() => setShowSaveTemplate(true)} className="btn-secondary flex items-center justify-center gap-2 text-sm">
+              <Save className="w-4 h-4" /> Als Tagesvorlage speichern
+            </button>
+          )}
+          <button onClick={() => setShowApply(true)} className="btn-secondary flex items-center justify-center gap-2 text-sm">
+            <CalendarPlus className="w-4 h-4" /> Tagesvorlage anwenden
+          </button>
+          <button onClick={() => setShowForm(true)} className="btn-primary flex items-center justify-center gap-2">
+            <Plus className="w-4 h-4" /> Aufguss hinzufügen
+          </button>
+        </div>
       </div>
 
       {/* Plan */}
       {!event || event.schedule.length === 0 ? (
         <div className="card p-8 sm:p-12 text-center text-gray-400 dark:text-stone-500">
           <p className="text-lg mb-3">Noch kein Programm für diesen Tag.</p>
-          <button onClick={() => setShowForm(true)} className="btn-primary">Ersten Aufguss anlegen</button>
+          <div className="flex flex-col sm:flex-row gap-2 justify-center">
+            <button onClick={() => setShowApply(true)} className="btn-primary flex items-center justify-center gap-2"><CalendarPlus className="w-4 h-4" /> Tagesvorlage anwenden</button>
+            <button onClick={() => setShowForm(true)} className="btn-secondary">Einzelnen Aufguss anlegen</button>
+          </div>
         </div>
       ) : (
         <div className="flex flex-col gap-3">
@@ -133,200 +221,27 @@ export default function AdminPlan() {
           templates={templates}
           users={users}
           saunas={saunas}
-          dateStr={dateStr}
+          loadScents={editEntry ? async () => (await api.get(`/events/${dateStr}/schedule/${editEntry.id}/scents`)).data : undefined}
           onSubmit={data => editEntry ? updateMutation.mutate({ ...data, id: editEntry.id }) : addMutation.mutate(data)}
           onClose={() => { setShowForm(false); setEditEntry(null); }}
         />
       )}
-    </div>
-  );
-}
 
-function ScheduleForm({ entry, templates, users, saunas, dateStr, onSubmit, onClose }: {
-  entry: ScheduleEntry | null;
-  templates: AufgussTemplate[];
-  users: User[];
-  saunas: Sauna[];
-  dateStr: string;
-  onSubmit: (data: any) => void;
-  onClose: () => void;
-}) {
-  const [form, setForm] = useState({
-    sauna_id: entry?.sauna_id ?? saunas[0]?.id ?? '',
-    template_id: entry?.template_id ?? '',
-    assigned_user_id: entry?.assigned_user_id ?? '',
-    custom_name: entry?.custom_name ?? '',
-    custom_subtitle: entry?.custom_subtitle ?? '',
-    start_time: entry?.start_time ?? '',
-    end_time: entry?.end_time ?? '',
-    status: entry?.status ?? 'geplant',
-  });
-  const [selectedScents, setSelectedScents] = useState<{ scent_id: string; dosage_ml: string; dosage_note: string }[]>([]);
-  const [scentsLoaded, setScentsLoaded] = useState(!entry); // neue Einträge brauchen kein Laden
+      {showApply && (
+        <ApplyDayTemplateModal
+          date={date}
+          onClose={() => setShowApply(false)}
+          onApplied={() => {
+            qc.invalidateQueries({ queryKey: ['event-admin'] });
+            qc.invalidateQueries({ queryKey: ['event'] });
+            qc.invalidateQueries({ queryKey: ['event-summary'] });
+          }}
+        />
+      )}
 
-  const { data: scents = [] } = useQuery<Scent[]>({ queryKey: ['scents'], queryFn: async () => (await api.get('/scents')).data });
-
-  // Beim Bearbeiten: aktuelle Düfte frisch aus der DB laden
-  useEffect(() => {
-    if (!entry) return;
-    api.get(`/events/${dateStr}/schedule/${entry.id}/scents`)
-      .then(res => {
-        setSelectedScents(res.data.map((s: any) => ({
-          scent_id: s.scent_id,
-          dosage_ml: s.dosage_ml?.toString() ?? '',
-          dosage_note: s.dosage_note ?? '',
-        })));
-      })
-      .catch(() => {
-        // Fallback auf Daten aus dem Entry-Objekt
-        setSelectedScents(entry.scents.map(s => ({
-          scent_id: s.scent_id ?? '',
-          dosage_ml: s.dosage_ml?.toString() ?? '',
-          dosage_note: s.dosage_note ?? '',
-        })));
-      })
-      .finally(() => setScentsLoaded(true));
-  }, [entry?.id]);
-
-  const addMinutes = (time: string, mins: number) => {
-    const [h, m] = time.split(':').map(Number);
-    const total = h * 60 + m + mins;
-    return `${String(Math.floor(total / 60) % 24).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
-  };
-
-  const set = (k: string, v: string) => {
-    if (k === 'template_id') {
-      const tmpl = templates.find(t => t.id === v);
-      setForm(f => ({
-        ...f,
-        template_id: v,
-        custom_name: tmpl?.name ?? '',
-        custom_subtitle: tmpl?.subtitle ?? '',
-        end_time: tmpl && f.start_time ? addMinutes(f.start_time, tmpl.duration_minutes) : f.end_time,
-      }));
-      if (tmpl) {
-        setSelectedScents(tmpl.scents.map(s => ({
-          scent_id: s.scent_id,
-          dosage_ml: s.dosage_ml?.toString() ?? '',
-          dosage_note: s.dosage_note ?? '',
-        })));
-        setScentsLoaded(true);
-      } else if (!v) {
-        setSelectedScents([]);
-      }
-    } else if (k === 'start_time') {
-      const tmpl = templates.find(t => t.id === form.template_id);
-      setForm(f => ({
-        ...f,
-        start_time: v,
-        end_time: tmpl && v ? addMinutes(v, tmpl.duration_minutes) : f.end_time,
-      }));
-    } else {
-      setForm(f => ({ ...f, [k]: v }));
-    }
-  };
-  const addScent = () => {
-    const sc = scents[0];
-    setSelectedScents(s => [...s, { scent_id: sc?.id ?? '', dosage_ml: sc?.default_dosage_ml?.toString() ?? '', dosage_note: sc?.dosage_note ?? '' }]);
-  };
-  const removeScent = (i: number) => setSelectedScents(s => s.filter((_, idx) => idx !== i));
-  const updateScent = (i: number, k: string, v: string) => {
-    if (k === 'scent_id') {
-      const sc = scents.find(x => x.id === v);
-      setSelectedScents(s => s.map((item, idx) => idx === i ? { scent_id: v, dosage_ml: sc?.default_dosage_ml?.toString() ?? '', dosage_note: sc?.dosage_note ?? '' } : item));
-    } else {
-      setSelectedScents(s => s.map((item, idx) => idx === i ? { ...item, [k]: v } : item));
-    }
-  };
-
-  return (
-    <div className="modal-backdrop">
-      <div className="modal-panel max-w-2xl">
-        <h3 className="font-display text-xl font-bold">{entry ? 'Aufguss bearbeiten' : 'Aufguss hinzufügen'}</h3>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:max-h-96 sm:overflow-y-auto sm:pr-2">
-          <div>
-            <label className="label">Sauna *</label>
-            <select className="input" value={form.sauna_id} onChange={e => set('sauna_id', e.target.value)}>
-              {saunas.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="label">Vorlage</label>
-            <select className="input" value={form.template_id} onChange={e => set('template_id', e.target.value)}>
-              <option value="">— Keine Vorlage —</option>
-              {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="label">Startzeit *</label>
-            <input type="time" className="input" value={form.start_time} onChange={e => set('start_time', e.target.value)} />
-          </div>
-          <div>
-            <label className="label">Endzeit</label>
-            <input type="time" className="input" value={form.end_time} onChange={e => set('end_time', e.target.value)} />
-          </div>
-          <div className="sm:col-span-2">
-            <label className="label">Name <span className="text-gray-400 dark:text-stone-500 font-normal">(aus Vorlage, anpassbar)</span></label>
-            <input className="input" value={form.custom_name} onChange={e => set('custom_name', e.target.value)} placeholder="z.B. Sommerliche Erfrischung" />
-          </div>
-          <div className="sm:col-span-2">
-            <label className="label">Untertitel</label>
-            <input className="input" value={form.custom_subtitle} onChange={e => set('custom_subtitle', e.target.value)} />
-          </div>
-          <div className="sm:col-span-2">
-            <label className="label">Mitarbeiter</label>
-            <select className="input" value={form.assigned_user_id} onChange={e => set('assigned_user_id', e.target.value)}>
-              <option value="">— Noch nicht zugewiesen —</option>
-              {users.filter(u => u.active).map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-            </select>
-          </div>
-
-          {/* Düfte-Sektion */}
-          <div className="sm:col-span-2">
-            <div className="flex items-center justify-between mb-2">
-              <label className="label mb-0">Düfte (für diesen Aufguss)</label>
-              <button type="button" onClick={addScent} className="btn-secondary text-xs py-1 px-2 flex items-center gap-1"><Plus className="w-3 h-3" /> Duft hinzufügen</button>
-            </div>
-            <div className="flex flex-col gap-2 bg-gray-100/70 dark:bg-stone-800/50 p-3 rounded-xl">
-              {!scentsLoaded && <p className="text-gray-400 dark:text-stone-500 text-sm italic">Lade Düfte…</p>}
-              {scentsLoaded && selectedScents.length === 0 && <p className="text-gray-400 dark:text-stone-500 text-sm italic">Keine Düfte gewählt</p>}
-              {selectedScents.map((s, i) => {
-                const sc = scents.find(x => x.id === s.scent_id);
-                return (
-                  <div key={i} className="flex flex-wrap sm:flex-nowrap gap-2 items-center">
-                    <select className="input w-full sm:w-auto sm:flex-1 text-sm" value={s.scent_id} onChange={e => updateScent(i, 'scent_id', e.target.value)}>
-                      <option value="">— Duft wählen —</option>
-                      {scents.map(sc => <option key={sc.id} value={sc.id}>{sc.name}</option>)}
-                    </select>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <input className="input w-20 text-sm" type="number" step="0.5" min="0" placeholder="Menge" value={s.dosage_ml} onChange={e => updateScent(i, 'dosage_ml', e.target.value)} />
-                      <span className="text-gray-500 dark:text-stone-400 text-xs w-8">{sc?.dosage_unit ?? 'ml'}</span>
-                    </div>
-                    <input className="input flex-1 min-w-0 sm:flex-none sm:w-28 text-sm" placeholder="Hinweis" value={s.dosage_note} onChange={e => updateScent(i, 'dosage_note', e.target.value)} />
-                    <button onClick={() => removeScent(i)} className="p-2 -m-1 text-gray-400 hover:text-red-500 dark:text-stone-500 dark:hover:text-red-400"><Trash2 className="w-4 h-4" /></button>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
-        <div className="flex gap-3 justify-end [&>button]:flex-1 sm:[&>button]:flex-none">
-          <button onClick={onClose} className="btn-secondary">Abbrechen</button>
-          <button
-            disabled={!scentsLoaded}
-            onClick={() => {
-              if (!form.sauna_id) { alert('Bitte eine Sauna wählen.'); return; }
-              if (!form.start_time) { alert('Bitte eine Startzeit eingeben.'); return; }
-              onSubmit({ ...form, selectedScents });
-            }}
-            className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Speichern
-          </button>
-        </div>
-      </div>
+      {showSaveTemplate && (
+        <SaveDayTemplateModal date={date} onClose={() => setShowSaveTemplate(false)} />
+      )}
     </div>
   );
 }

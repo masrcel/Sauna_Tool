@@ -10,6 +10,7 @@ import AdminMitarbeiter from './pages/admin/AdminMitarbeiter';
 import AdminSaunen from './pages/admin/AdminSaunen';
 import AdminDuefte from './pages/admin/AdminDuefte';
 import AdminVorlagen from './pages/admin/AdminVorlagen';
+import AdminTagesvorlagen from './pages/admin/AdminTagesvorlagen';
 import AdminEinstellungen from './pages/admin/AdminEinstellungen';
 import AdminVersionen from './pages/admin/AdminVersionen';
 import { useAuth } from './hooks/useAuth';
@@ -63,6 +64,7 @@ export default function App() {
           <Route path="saunen" element={<AdminOnlyRoute><AdminSaunen /></AdminOnlyRoute>} />
           <Route path="duefte" element={<AdminDuefte />} />
           <Route path="vorlagen" element={<AdminVorlagen />} />
+          <Route path="tagesvorlagen" element={<AdminTagesvorlagen />} />
           <Route path="einstellungen" element={<AdminOnlyRoute><AdminEinstellungen /></AdminOnlyRoute>} />
           <Route path="versionen" element={<AdminVersionen />} />
         </Route>

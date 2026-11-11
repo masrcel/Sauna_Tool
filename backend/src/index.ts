@@ -10,6 +10,7 @@ import saunaRoutes from './routes/saunas';
 import scentRoutes from './routes/scents';
 import templateRoutes from './routes/templates';
 import eventRoutes from './routes/events';
+import dayTemplateRoutes from './routes/dayTemplates';
 import ideaRoutes from './routes/ideas';
 import settingsRoutes from './routes/settings';
 
@@ -28,6 +29,7 @@ app.use('/api/saunas', saunaRoutes);
 app.use('/api/scents', scentRoutes);
 app.use('/api/templates', templateRoutes);
 app.use('/api/events', eventRoutes);
+app.use('/api/day-templates', dayTemplateRoutes);
 app.use('/api/ideas', ideaRoutes);
 app.use('/api/settings', settingsRoutes);
 

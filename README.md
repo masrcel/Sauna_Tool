@@ -64,8 +64,9 @@ docker compose exec frontend env | grep DOMAIN    # muss die echte Domain zeigen
 
 | Bereich | Beschreibung |
 |---|---|
-| **Tagesplan** | Aufgüsse pro Tag planen, Saunen und Mitarbeiter zuweisen, Zeiten setzen (mit Konfliktprüfung) |
-| **Vorlagen** | Wiederverwendbare Aufguss-Vorlagen mit Düften + Dosierung |
+| **Tagesplan** | Aufgüsse pro Tag planen, Saunen und Mitarbeiter zuweisen, Zeiten setzen (mit Konfliktprüfung); Datumsauswahl und Wochenleiste zum schnellen Springen |
+| **Tagesvorlagen** | Kompletten Tagesablauf speichern und auf einen Tag oder einen Zeitraum (z. B. alle Samstage) anwenden |
+| **Aufguss-Vorlagen** | Wiederverwendbare Aufguss-Vorlagen mit Düften + Dosierung |
 | **Ideen** | Ideensammlung zu Düften, Zeremonien, Musik mit Kommentarfunktion |
 | **Mitarbeiter** | Fotos, Rollen, Zuweisung zu Aufgüssen |
 | **Saunen** | Saunen mit Namen verwalten |
@@ -93,7 +94,8 @@ Die Displays (`/` und `/personal`) sind ohne Login erreichbar und zeigen nur Dat
 |---|---|:-:|:-:|:-:|
 | **Tagesplan** | Ansehen (Displays) | ✅ | ✅ | ✅ |
 | | Aufgüsse anlegen, ändern, löschen, Düfte zuweisen | – | ✅ | ✅ |
-| **Vorlagen** | Ansehen, anlegen, ändern, löschen | – | ✅ | ✅ |
+| **Tagesvorlagen** | Ansehen, anlegen, ändern, löschen, anwenden | – | ✅ | ✅ |
+| **Aufguss-Vorlagen** | Ansehen, anlegen, ändern, löschen | – | ✅ | ✅ |
 | **Ideen** | Alle Ideen ansehen, neue anlegen | – | ✅ | ✅ |
 | | Ändern, löschen | – | nur eigene | alle |
 | | Kommentieren | – | ✅ | ✅ |

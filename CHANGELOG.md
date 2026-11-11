@@ -14,7 +14,21 @@ Versionierung nach [Semantic Versioning](https://semver.org/lang/de/):
 
 ## [Unveröffentlicht]
 
+### Hinzugefügt
+- **Tagesvorlagen:** Neuer Menüpunkt „Tagesvorlagen“. Ein kompletter Tagesablauf (Sauna, Zeiten,
+  Mitarbeiter, Düfte je Aufguss) wird einmal angelegt und dann auf beliebige Tage übertragen.
+  - Im Tagesplan: **„Als Tagesvorlage speichern“** übernimmt einen fertig geplanten Tag als Vorlage.
+  - Im Tagesplan: **„Tagesvorlage anwenden“** auf den aktuellen Tag oder einen Zeitraum mit
+    Wochentag-Auswahl (z. B. alle Samstage der nächsten 4 Wochen, max. 92 Tage).
+  - Bestehende Aufgüsse wahlweise **behalten** (Vorlage ergänzt) oder **ersetzen**. Aufgüsse mit
+    Zeitkonflikt oder deaktivierter Sauna werden übersprungen und danach aufgelistet.
+  - Vorlagen lassen sich bearbeiten, duplizieren und löschen (bereits geplante Tage bleiben erhalten).
+- **Tagesplan, schneller springen:** Datumsfeld „Gehe zu“ und eine Wochenleiste (Mo–So) mit Anzahl
+  der Aufgüsse je Tag; mit « » wochenweise blättern. Das gewählte Datum steht in der URL
+  (`/admin/plan?datum=2026-11-21`) und bleibt beim Neuladen erhalten.
+
 ### Geändert
+- **Menü:** „Vorlagen“ heißt jetzt „Aufguss-Vorlagen“ (zur Unterscheidung von den Tagesvorlagen).
 - **Berechtigungen, Admin-Panel:** Personal sieht nur noch, was es darf. Saunen und Einstellungen
   sind ausgeblendet (auch per direkter URL gesperrt), ebenso Knöpfe für Admin-Aktionen
   (Mitarbeiter anlegen/bearbeiten/deaktivieren, Duft löschen). Versionen sieht jeder.

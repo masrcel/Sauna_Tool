@@ -136,6 +136,40 @@ CREATE TABLE IF NOT EXISTS idea_scents (
   PRIMARY KEY (idea_id, scent_id)
 );
 
+-- Tagesvorlagen (kompletter Tagesablauf, auf beliebige Tage anwendbar)
+CREATE TABLE IF NOT EXISTS day_templates (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name VARCHAR(200) NOT NULL,
+  description TEXT,
+  created_by UUID REFERENCES users(id),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Aufgüsse einer Tagesvorlage
+CREATE TABLE IF NOT EXISTS day_template_entries (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  day_template_id UUID NOT NULL REFERENCES day_templates(id) ON DELETE CASCADE,
+  sauna_id UUID NOT NULL REFERENCES saunas(id),
+  template_id UUID REFERENCES aufguss_templates(id) ON DELETE SET NULL,
+  assigned_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  custom_name VARCHAR(200),
+  custom_subtitle VARCHAR(200),
+  start_time TIME NOT NULL,
+  end_time TIME,
+  sort_order INT NOT NULL DEFAULT 0
+);
+
+-- Düfte je Aufguss einer Tagesvorlage
+CREATE TABLE IF NOT EXISTS day_template_entry_scents (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  entry_id UUID NOT NULL REFERENCES day_template_entries(id) ON DELETE CASCADE,
+  scent_id UUID NOT NULL REFERENCES scents(id) ON DELETE CASCADE,
+  dosage_ml DECIMAL(6,2),
+  dosage_note TEXT,
+  sort_order INT NOT NULL DEFAULT 0
+);
+
 -- Seed-Daten: Standard-Admin
 INSERT INTO users (name, email, password_hash, role) VALUES
   ('Admin', 'admin@sauna.local', '$2a$10$placeholder', 'admin');

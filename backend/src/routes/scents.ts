@@ -51,6 +51,7 @@ router.delete('/:id', requireAdmin, async (req, res, next) => {
     await client.query('DELETE FROM template_scents WHERE scent_id=$1', [id]);
     await client.query('DELETE FROM schedule_scents WHERE scent_id=$1', [id]);
     await client.query('DELETE FROM idea_scents WHERE scent_id=$1', [id]);
+    await client.query('DELETE FROM day_template_entry_scents WHERE scent_id=$1', [id]);
     await client.query('DELETE FROM scents WHERE id=$1', [id]);
     await client.query('COMMIT');
     res.json({ ok: true });

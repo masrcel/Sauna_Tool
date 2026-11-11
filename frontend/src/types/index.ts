@@ -99,3 +99,46 @@ export interface Idea {
   comments: IdeaComment[];
   comment_count: number;
 }
+
+export interface EntryScent {
+  scent_id: string;
+  scent_name?: string;
+  dosage_ml?: number | null;
+  dosage_note?: string | null;
+  color?: string;
+}
+
+export interface DayTemplateEntry {
+  id?: string;
+  sauna_id: string;
+  sauna_name?: string;
+  sauna_active?: boolean;
+  template_id?: string | null;
+  template_name?: string | null;
+  template_subtitle?: string | null;
+  assigned_user_id?: string | null;
+  staff_name?: string | null;
+  staff_avatar?: string | null;
+  custom_name?: string | null;
+  custom_subtitle?: string | null;
+  start_time: string;
+  end_time?: string | null;
+  sort_order?: number;
+  scents: EntryScent[];
+}
+
+export interface DayTemplate {
+  id: string;
+  name: string;
+  description?: string | null;
+  created_by?: string;
+  creator_name?: string;
+  entries: DayTemplateEntry[];
+}
+
+export interface ApplyDayResult {
+  date: string;
+  created: number;
+  removed: number;
+  skipped: { name: string; start_time: string; reason: string }[];
+}

@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../hooks/useAuth';
 import Avatar from '../../components/Avatar';
 import {
-  CalendarDays, Lightbulb, Users, Thermometer, Droplets, BookMarked, LogOut, Monitor, Settings, History, Menu, X
+  CalendarDays, CalendarRange, Lightbulb, Users, Thermometer, Droplets, BookMarked, LogOut, Monitor, Settings, History, Menu, X
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { api } from '../../lib/api';
@@ -13,7 +13,8 @@ import { APP_VERSION } from '../../lib/changelog';
 // adminOnly: nur für Rolle „admin“ sichtbar (Rechte werden zusätzlich im Backend geprüft)
 const nav = [
   { to: 'plan',        label: 'Tagesplan',   icon: CalendarDays },
-  { to: 'vorlagen',    label: 'Vorlagen',    icon: BookMarked },
+  { to: 'tagesvorlagen', label: 'Tagesvorlagen', icon: CalendarRange },
+  { to: 'vorlagen',    label: 'Aufguss-Vorlagen', icon: BookMarked },
   { to: 'ideen',       label: 'Ideen',       icon: Lightbulb },
   { to: 'mitarbeiter', label: 'Mitarbeiter', icon: Users },
   { to: 'saunen',      label: 'Saunen',      icon: Thermometer, adminOnly: true },

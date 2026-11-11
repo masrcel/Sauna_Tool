@@ -4,15 +4,19 @@ import { requireAuth, AuthRequest } from '../middleware/auth';
 
 const router = Router();
 
-async function checkConflicts(
+/** Führt eine SQL-Abfrage aus – entweder über den Pool oder innerhalb einer Transaktion */
+export type Querier = (text: string, params?: any[]) => Promise<any[]>;
+
+export async function checkConflicts(
   date: string,
   saunaId: string,
   userId: string | null,
   startTime: string,
   endTime: string | null,
-  excludeId = '00000000-0000-0000-0000-000000000000'
+  excludeId = '00000000-0000-0000-0000-000000000000',
+  db: Querier = query
 ): Promise<string | null> {
-  const saunaHits = await query(`
+  const saunaHits = await db(`
     SELECT TO_CHAR(s.start_time, 'HH24:MI') as start_time,
            TO_CHAR(COALESCE(s.end_time, s.start_time + interval '15 minutes'), 'HH24:MI') as end_time,
            TO_CHAR(COALESCE(s.end_time, s.start_time + interval '15 minutes') + (sa.break_minutes || ' minutes')::interval, 'HH24:MI') as free_at,
@@ -36,7 +40,7 @@ async function checkConflicts(
   }
 
   if (userId) {
-    const staffHits = await query(`
+    const staffHits = await db(`
       SELECT TO_CHAR(s.start_time, 'HH24:MI') as start_time,
              TO_CHAR(COALESCE(s.end_time, s.start_time + interval '15 minutes'), 'HH24:MI') as end_time,
              sa.name as sauna_name,
@@ -60,6 +64,27 @@ async function checkConflicts(
 
   return null;
 }
+
+// Übersicht: Anzahl Aufgüsse je Tag in einem Zeitraum (für Wochenleiste / Vorlagen-Anwendung)
+router.get('/', requireAuth, async (req, res, next) => {
+  try {
+    const { from, to } = req.query as { from?: string; to?: string };
+    const dateRe = /^\d{4}-\d{2}-\d{2}$/;
+    if (!from || !to || !dateRe.test(from) || !dateRe.test(to)) {
+      res.status(400).json({ error: 'from und to (YYYY-MM-DD) sind erforderlich' });
+      return;
+    }
+    const rows = await query(`
+      SELECT TO_CHAR(e.event_date, 'YYYY-MM-DD') as date, COUNT(s.id)::int as count
+      FROM events e
+      JOIN aufguss_schedule s ON s.event_id = e.id AND s.status != 'abgesagt'
+      WHERE e.event_date BETWEEN $1 AND $2
+      GROUP BY e.event_date
+      ORDER BY e.event_date
+    `, [from, to]);
+    res.json(rows);
+  } catch (err) { next(err); }
+});
 
 // Tages-Event abrufen oder anlegen
 router.get('/:date', async (req, res, next) => {
