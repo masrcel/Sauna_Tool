@@ -1,0 +1,10 @@
+# Gilt für beide Images (Build-Kontext ist das Projekt-Root)
+.git
+**/node_modules
+**/dist
+**/.env
+**/.env.*
+**/uploads
+**/.DS_Store
+certbot
+*.md

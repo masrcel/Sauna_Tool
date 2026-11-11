@@ -32,6 +32,10 @@ export const CHANGELOG: Release[] = [
         'Abmelden beendet die Anmeldung jetzt auch auf dem Server, nicht nur im Browser.',
         'Neues Passwort oder Deaktivieren meldet einen Mitarbeiter auf allen Geräten ab. Wer das eigene Passwort ändert, bleibt auf dem aktuellen Gerät angemeldet.',
         'Der Webserver sendet zusätzliche Sicherheits-Header (u. a. Content-Security-Policy). Das schützt besser vor eingeschleustem Code und verhindert das Einbetten in fremde Seiten.',
+        'Feste Paket- und Image-Versionen beim Bauen: Es landen nur noch geprüfte Versionen auf dem Server, keine ungeprüften Updates.',
+      ],
+      changed: [
+        'Server läuft mit Node 24 LTS statt Node 20.',
       ],
     },
   },

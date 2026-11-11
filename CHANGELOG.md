@@ -27,6 +27,14 @@ Versionierung nach [Semantic Versioning](https://semver.org/lang/de/):
 - **Sicherheit:** Der Webserver sendet jetzt Sicherheits-Header (Content-Security-Policy,
   `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`). Eingeschleuster Code kann so
   keine fremden Skripte laden, und die App lässt sich nicht in fremde Seiten einbetten.
+- **Sicherheit:** Der Docker-Build hat bei jedem Bauen die jeweils neuesten Paketversionen
+  geladen. Jetzt werden exakt die Versionen aus `package-lock.json` installiert (`npm ci`). Auch
+  die Basis-Images (Node, nginx, PostgreSQL, certbot) sind auf feste Versionen gepinnt.
+
+### Geändert
+- **Docker:** Node 24 LTS statt Node 20 (seit April 2026 ohne Sicherheitsupdates). Die Images
+  werden jetzt aus dem Projekt-Root gebaut (`docker-compose.yml` ist angepasst). Die
+  hochgeladenen Profilfotos bleiben erhalten.
 
 ---
 
