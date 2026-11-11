@@ -23,6 +23,30 @@ export const CHANGE_TYPE_LABELS: Record<ChangeType, string> = {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '1.6.0',
+    date: '2026-11-11',
+    title: '„Mir zuweisen“ & sicherer Login',
+    changes: {
+      added: [
+        '„Mir zuweisen“: Einen noch freien Aufguss im Tagesplan mit einem Klick selbst übernehmen. Wer zu der Zeit schon einen anderen Aufguss leitet, bekommt einen Hinweis.',
+      ],
+      changed: [
+        'Profilfotos: Nur noch Bilder im Format JPG oder PNG (max. 5 MB).',
+        'Einstellungen: Die Logo-Adresse muss mit https://, http:// oder / beginnen.',
+        'Login: Nach zu vielen Fehlversuchen erscheint „Zu viele Anmeldeversuche …“ statt „E-Mail oder Passwort falsch“.',
+      ],
+      fixed: [
+        'Änderungen an Mitarbeitern ließen sich nicht speichern.',
+        'Bei einem Serverfehler lud die Seite endlos – jetzt kommt sofort eine verständliche Meldung, auch beim Hochladen von Profilfotos.',
+      ],
+      security: [
+        'Passwörter lassen sich nicht mehr beliebig oft durchprobieren: Nach 10 Fehlversuchen in 15 Minuten wird die Anmeldung vorübergehend gesperrt.',
+        'Der Server prüft alle Eingaben und lehnt ungültige Daten mit klarer Meldung ab.',
+        'Technische Fehlerdetails werden nicht mehr an den Browser weitergegeben.',
+      ],
+    },
+  },
+  {
     version: '1.5.0',
     date: '2026-11-11',
     title: 'Tagesvorlagen & schneller Tageswechsel',
