@@ -45,3 +45,17 @@ export function categoryColor(cat: string): string {
 export function avatarFallback(name: string): string {
   return name?.split(' ').map(p => p[0]).join('').substring(0, 2).toUpperCase() ?? '?';
 }
+
+/** Sekunden bis zum Start (start_time im Format HH:MM[:SS]) relativ zu now */
+export function secondsUntil(startTime: string, now: Date): number {
+  const [h, m, sec] = startTime.split(':').map(Number);
+  const start = new Date(now);
+  start.setHours(h, m, sec || 0, 0);
+  return Math.floor((start.getTime() - now.getTime()) / 1000);
+}
+
+/** Formatiert Sekunden als M:SS */
+export function formatCountdown(secs: number): string {
+  const s = Math.max(0, secs);
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}

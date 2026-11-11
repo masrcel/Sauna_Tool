@@ -6,24 +6,11 @@ import { api } from '../lib/api';
 import { DayEvent } from '../types';
 import AufgussCard from '../components/AufgussCard';
 import Avatar from '../components/Avatar';
-import { formatTime, cn } from '../lib/utils';
+import { formatTime, cn, secondsUntil, formatCountdown } from '../lib/utils';
 import { useClock } from '../hooks/useClock';
 
 const WARN_10_MIN = 10 * 60;
 const WARN_5_MIN = 5 * 60;
-
-/** Sekunden bis zum Start (start_time im Format HH:MM[:SS]) relativ zu now */
-function secondsUntil(startTime: string, now: Date): number {
-  const [h, m, sec] = startTime.split(':').map(Number);
-  const start = new Date(now);
-  start.setHours(h, m, sec || 0, 0);
-  return Math.floor((start.getTime() - now.getTime()) / 1000);
-}
-
-function formatCountdown(secs: number): string {
-  const s = Math.max(0, secs);
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
-}
 
 /** 'urgent' = ≤ 5 Min, 'soon' = ≤ 10 Min, sonst null */
 function warnLevel(secs: number): 'urgent' | 'soon' | null {

@@ -7,6 +7,9 @@ import AufgussCard from '../components/AufgussCard';
 import Avatar from '../components/Avatar';
 import ScentBadge from '../components/ScentBadge';
 import { useClock } from '../hooks/useClock';
+import { cn, formatTime, secondsUntil, formatCountdown } from '../lib/utils';
+
+const COUNTDOWN_SECS = 5 * 60;
 
 function useTodayEvent(dateStr: string) {
   return useQuery<DayEvent | null>({
@@ -36,6 +39,17 @@ export default function GuestDisplay() {
     acc[entry.sauna_id] = [...(acc[entry.sauna_id] ?? []), entry];
     return acc;
   }, {});
+
+  // Aufgüsse, die in den nächsten 5 Minuten starten (Sekunden je Eintrag)
+  const countdowns = new Map<string, number>();
+  for (const e of visibleSchedule) {
+    if (e.status !== 'geplant') continue;
+    const secs = secondsUntil(e.start_time, now);
+    if (secs > 0 && secs <= COUNTDOWN_SECS) countdowns.set(e.id, secs);
+  }
+  const startingSoon = visibleSchedule
+    .filter(e => countdowns.has(e.id))
+    .sort((a, b) => countdowns.get(a.id)! - countdowns.get(b.id)!);
 
   const saunaNames = visibleSchedule.reduce<Record<string, string>>((acc, e) => {
     acc[e.sauna_id] = e.sauna_name;
@@ -75,18 +89,76 @@ export default function GuestDisplay() {
             <p className="text-lg">Kein Programm für heute eingetragen.</p>
           </div>
         ) : (
+          <>
+          {/* Countdown – Aufguss startet in weniger als 5 Minuten */}
+          {startingSoon.length > 0 && (
+            <section className="flex flex-col gap-4 mb-8">
+              {startingSoon.map(entry => (
+                <div
+                  key={entry.id}
+                  className="rounded-3xl border-2 border-sauna-500 bg-sauna-50 dark:bg-sauna-900/40 px-8 py-5 flex items-center gap-6 shadow-lg"
+                >
+                  <div className="shrink-0 rounded-2xl bg-sauna-600 text-white px-6 py-3 text-center">
+                    <p className="text-xs uppercase tracking-widest opacity-90">Beginnt in</p>
+                    <p className="font-mono text-6xl font-bold tabular-nums leading-none mt-1">
+                      {formatCountdown(countdowns.get(entry.id)!)}
+                    </p>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sauna-600 dark:text-sauna-400 text-sm font-semibold uppercase tracking-widest">
+                      Gleich geht's los – {entry.sauna_name}
+                    </p>
+                    <p className="font-display text-3xl font-bold text-gray-900 dark:text-stone-100 truncate">
+                      {entry.custom_name ?? entry.template_name ?? 'Aufguss'}
+                    </p>
+                    <p className="text-gray-500 dark:text-stone-400 mt-1">
+                      Start um {formatTime(entry.start_time)} Uhr
+                    </p>
+                    {entry.scents.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        {entry.scents.map((s, i) => (
+                          <ScentBadge key={i} name={s.scent_name} color={s.color} size="sm" />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {entry.staff_name && (
+                    <div className="shrink-0 flex flex-col items-center gap-2">
+                      <Avatar name={entry.staff_name} url={entry.staff_avatar} size="lg" />
+                      <p className="font-semibold text-gray-900 dark:text-stone-100">{entry.staff_name}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </section>
+          )}
+
           <div className="grid gap-8" style={{ gridTemplateColumns: `repeat(${Object.keys(grouped).length}, 1fr)` }}>
             {Object.entries(grouped).map(([saunaId, entries]) => (
               <div key={saunaId} className="flex flex-col gap-4">
                 <h2 className="text-steam-400 font-semibold uppercase tracking-widest text-sm text-center border-b border-gray-200 dark:border-stone-800 pb-3">
                   {saunaNames[saunaId]}
                 </h2>
-                {entries.map(entry => (
-                  <AufgussCard key={entry.id} entry={entry} showDetails={false} />
-                ))}
+                {entries.map(entry => {
+                  const secs = countdowns.get(entry.id);
+                  return (
+                    <div
+                      key={entry.id}
+                      className={cn('relative', secs !== undefined && 'rounded-2xl ring-2 ring-sauna-500 ring-offset-2 ring-offset-gray-100 dark:ring-offset-stone-950')}
+                    >
+                      {secs !== undefined && (
+                        <span className="absolute -top-3 right-3 z-10 badge bg-sauna-600 text-white font-mono tabular-nums shadow">
+                          in {formatCountdown(secs)}
+                        </span>
+                      )}
+                      <AufgussCard entry={entry} showDetails={false} />
+                    </div>
+                  );
+                })}
               </div>
             ))}
           </div>
+          </>
         )}
       </main>
 
@@ -94,10 +166,16 @@ export default function GuestDisplay() {
       {event?.schedule && (() => {
         const next = event.schedule.find(e => e.status === 'geplant');
         if (!next) return null;
+        const nextSecs = countdowns.get(next.id);
         return (
           <div className="fixed bottom-0 left-0 right-0 bg-sauna-900/90 backdrop-blur border-t border-sauna-700 px-8 py-4 flex items-center justify-between">
             <div>
-              <span className="text-sauna-300 text-xs uppercase tracking-widest">Nächster Aufguss</span>
+              <span className="text-sauna-300 text-xs uppercase tracking-widest">
+                Nächster Aufguss
+                {nextSecs !== undefined && (
+                  <span className="ml-2 font-mono font-bold text-white tabular-nums">· in {formatCountdown(nextSecs)}</span>
+                )}
+              </span>
               <p className="text-white font-display text-lg font-semibold">
                 {next.custom_name ?? next.template_name} — {next.start_time?.substring(0, 5)} Uhr
               </p>
