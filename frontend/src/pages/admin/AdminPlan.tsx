@@ -76,50 +76,50 @@ export default function AdminPlan() {
   });
 
   return (
-    <div className="p-6 flex flex-col gap-6">
+    <div className="p-4 sm:p-6 flex flex-col gap-4 sm:gap-6">
       {/* Date Nav */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <button onClick={() => setDate(d => subDays(d, 1))} className="btn-secondary p-2"><ChevronLeft className="w-4 h-4" /></button>
-          <div className="text-center">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-2 sm:gap-4">
+          <button onClick={() => setDate(d => subDays(d, 1))} className="btn-secondary p-2" aria-label="Vorheriger Tag"><ChevronLeft className="w-4 h-4" /></button>
+          <div className="text-center flex-1 sm:flex-none min-w-0">
             <p className="text-gray-500 dark:text-stone-400 text-sm">{format(date, 'EEEE', { locale: de })}</p>
-            <h2 className="font-display text-xl font-bold text-gray-900 dark:text-stone-100">{format(date, 'dd. MMMM yyyy', { locale: de })}</h2>
+            <h2 className="font-display text-lg sm:text-xl font-bold text-gray-900 dark:text-stone-100">{format(date, 'dd. MMMM yyyy', { locale: de })}</h2>
           </div>
-          <button onClick={() => setDate(d => addDays(d, 1))} className="btn-secondary p-2"><ChevronRight className="w-4 h-4" /></button>
+          <button onClick={() => setDate(d => addDays(d, 1))} className="btn-secondary p-2" aria-label="Nächster Tag"><ChevronRight className="w-4 h-4" /></button>
           <button onClick={() => setDate(new Date())} className="btn-secondary text-sm">Heute</button>
         </div>
-        <button onClick={() => setShowForm(true)} className="btn-primary flex items-center gap-2">
+        <button onClick={() => setShowForm(true)} className="btn-primary flex items-center justify-center gap-2">
           <Plus className="w-4 h-4" /> Aufguss hinzufügen
         </button>
       </div>
 
       {/* Plan */}
       {!event || event.schedule.length === 0 ? (
-        <div className="card p-12 text-center text-gray-400 dark:text-stone-500">
+        <div className="card p-8 sm:p-12 text-center text-gray-400 dark:text-stone-500">
           <p className="text-lg mb-3">Noch kein Programm für diesen Tag.</p>
           <button onClick={() => setShowForm(true)} className="btn-primary">Ersten Aufguss anlegen</button>
         </div>
       ) : (
         <div className="flex flex-col gap-3">
           {event.schedule.map(entry => (
-            <div key={entry.id} className="flex gap-3 items-start">
-              <div className="flex-1">
+            <div key={entry.id} className="flex flex-col sm:flex-row gap-2 sm:gap-3 sm:items-start">
+              <div className="flex-1 min-w-0">
                 <AufgussCard entry={entry} showDetails compact />
               </div>
-              <div className="flex flex-col gap-2 pt-1 shrink-0">
+              <div className="flex sm:flex-col gap-2 sm:pt-1 shrink-0">
                 {/* Status-Buttons */}
                 <select
                   value={entry.status}
                   onChange={e => statusMutation.mutate({ ...entry, id: entry.id, status: e.target.value })}
-                  className="input text-xs py-1 px-2 w-32"
+                  className="input text-xs py-2 sm:py-1 px-2 flex-1 sm:flex-none sm:w-32"
                 >
                   <option value="geplant">Geplant</option>
                   <option value="läuft">Läuft</option>
                   <option value="fertig">Fertig</option>
                   <option value="abgesagt">Abgesagt</option>
                 </select>
-                <button onClick={() => setEditEntry(entry)} className="btn-secondary py-1 px-2 text-xs flex items-center gap-1"><Pencil className="w-3 h-3" /> Bearbeiten</button>
-                <button onClick={() => { if (confirm('Aufguss löschen?')) deleteMutation.mutate(entry.id); }} className="btn-danger py-1 px-2 text-xs flex items-center gap-1"><Trash2 className="w-3 h-3" /> Löschen</button>
+                <button onClick={() => setEditEntry(entry)} className="btn-secondary py-2 sm:py-1 px-3 sm:px-2 text-xs flex items-center justify-center gap-1"><Pencil className="w-3 h-3" /> Bearbeiten</button>
+                <button onClick={() => { if (confirm('Aufguss löschen?')) deleteMutation.mutate(entry.id); }} className="btn-danger py-2 sm:py-1 px-3 sm:px-2 text-xs flex items-center justify-center gap-1"><Trash2 className="w-3 h-3" /> Löschen</button>
               </div>
             </div>
           ))}
@@ -240,11 +240,11 @@ function ScheduleForm({ entry, templates, users, saunas, dateStr, onSubmit, onCl
   };
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 overflow-auto">
-      <div className="card p-6 w-full max-w-2xl flex flex-col gap-4 my-4">
+    <div className="modal-backdrop">
+      <div className="modal-panel max-w-2xl">
         <h3 className="font-display text-xl font-bold">{entry ? 'Aufguss bearbeiten' : 'Aufguss hinzufügen'}</h3>
 
-        <div className="grid grid-cols-2 gap-3 max-h-96 overflow-y-auto pr-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:max-h-96 sm:overflow-y-auto sm:pr-2">
           <div>
             <label className="label">Sauna *</label>
             <select className="input" value={form.sauna_id} onChange={e => set('sauna_id', e.target.value)}>
@@ -266,15 +266,15 @@ function ScheduleForm({ entry, templates, users, saunas, dateStr, onSubmit, onCl
             <label className="label">Endzeit</label>
             <input type="time" className="input" value={form.end_time} onChange={e => set('end_time', e.target.value)} />
           </div>
-          <div className="col-span-2">
+          <div className="sm:col-span-2">
             <label className="label">Name <span className="text-gray-400 dark:text-stone-500 font-normal">(aus Vorlage, anpassbar)</span></label>
             <input className="input" value={form.custom_name} onChange={e => set('custom_name', e.target.value)} placeholder="z.B. Sommerliche Erfrischung" />
           </div>
-          <div className="col-span-2">
+          <div className="sm:col-span-2">
             <label className="label">Untertitel</label>
             <input className="input" value={form.custom_subtitle} onChange={e => set('custom_subtitle', e.target.value)} />
           </div>
-          <div className="col-span-2">
+          <div className="sm:col-span-2">
             <label className="label">Mitarbeiter</label>
             <select className="input" value={form.assigned_user_id} onChange={e => set('assigned_user_id', e.target.value)}>
               <option value="">— Noch nicht zugewiesen —</option>
@@ -283,7 +283,7 @@ function ScheduleForm({ entry, templates, users, saunas, dateStr, onSubmit, onCl
           </div>
 
           {/* Düfte-Sektion */}
-          <div className="col-span-2">
+          <div className="sm:col-span-2">
             <div className="flex items-center justify-between mb-2">
               <label className="label mb-0">Düfte (für diesen Aufguss)</label>
               <button type="button" onClick={addScent} className="btn-secondary text-xs py-1 px-2 flex items-center gap-1"><Plus className="w-3 h-3" /> Duft hinzufügen</button>
@@ -294,8 +294,8 @@ function ScheduleForm({ entry, templates, users, saunas, dateStr, onSubmit, onCl
               {selectedScents.map((s, i) => {
                 const sc = scents.find(x => x.id === s.scent_id);
                 return (
-                  <div key={i} className="flex gap-2 items-center">
-                    <select className="input flex-1 text-sm" value={s.scent_id} onChange={e => updateScent(i, 'scent_id', e.target.value)}>
+                  <div key={i} className="flex flex-wrap sm:flex-nowrap gap-2 items-center">
+                    <select className="input w-full sm:w-auto sm:flex-1 text-sm" value={s.scent_id} onChange={e => updateScent(i, 'scent_id', e.target.value)}>
                       <option value="">— Duft wählen —</option>
                       {scents.map(sc => <option key={sc.id} value={sc.id}>{sc.name}</option>)}
                     </select>
@@ -303,8 +303,8 @@ function ScheduleForm({ entry, templates, users, saunas, dateStr, onSubmit, onCl
                       <input className="input w-20 text-sm" type="number" step="0.5" min="0" placeholder="Menge" value={s.dosage_ml} onChange={e => updateScent(i, 'dosage_ml', e.target.value)} />
                       <span className="text-gray-500 dark:text-stone-400 text-xs w-8">{sc?.dosage_unit ?? 'ml'}</span>
                     </div>
-                    <input className="input w-28 text-sm" placeholder="Hinweis" value={s.dosage_note} onChange={e => updateScent(i, 'dosage_note', e.target.value)} />
-                    <button onClick={() => removeScent(i)} className="text-gray-400 hover:text-red-500 dark:text-stone-500 dark:hover:text-red-400"><Trash2 className="w-4 h-4" /></button>
+                    <input className="input flex-1 min-w-0 sm:flex-none sm:w-28 text-sm" placeholder="Hinweis" value={s.dosage_note} onChange={e => updateScent(i, 'dosage_note', e.target.value)} />
+                    <button onClick={() => removeScent(i)} className="p-2 -m-1 text-gray-400 hover:text-red-500 dark:text-stone-500 dark:hover:text-red-400"><Trash2 className="w-4 h-4" /></button>
                   </div>
                 );
               })}
@@ -312,7 +312,7 @@ function ScheduleForm({ entry, templates, users, saunas, dateStr, onSubmit, onCl
           </div>
         </div>
 
-        <div className="flex gap-3 justify-end">
+        <div className="flex gap-3 justify-end [&>button]:flex-1 sm:[&>button]:flex-none">
           <button onClick={onClose} className="btn-secondary">Abbrechen</button>
           <button
             disabled={!scentsLoaded}

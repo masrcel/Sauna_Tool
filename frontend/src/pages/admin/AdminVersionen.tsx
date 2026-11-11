@@ -17,7 +17,7 @@ function formatDate(iso: string): string {
 
 export default function AdminVersionen() {
   return (
-    <div className="p-6 flex flex-col gap-8 max-w-3xl">
+    <div className="p-4 sm:p-6 flex flex-col gap-6 sm:gap-8 max-w-3xl">
       <div>
         <h2 className="font-display text-2xl font-bold">Versionen</h2>
         <p className="text-gray-500 dark:text-stone-500 text-sm mt-1">

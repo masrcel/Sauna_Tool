@@ -23,6 +23,22 @@ export const CHANGE_TYPE_LABELS: Record<ChangeType, string> = {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '1.4.0',
+    date: '2026-11-11',
+    title: 'Handy-Ansicht',
+    changes: {
+      added: [
+        'Admin-Panel auf dem Handy: Menü über den ☰-Button oben links, die Navigation klappt seitlich aus.',
+        'Gäste- und Personal-Display lassen sich auf dem Handy öffnen; die Saunen stehen dort untereinander statt nebeneinander.',
+        'Die Seite kann über „Zum Home-Bildschirm“ wie eine App gestartet werden.',
+      ],
+      changed: [
+        'Formulare (Aufguss, Vorlage, Duft, Sauna, Mitarbeiter, Idee) öffnen auf dem Handy als scrollbares Fenster von unten, Eingabefelder untereinander.',
+        'Tagesplan, Listen und Kopfzeilen brechen auf kleinen Bildschirmen sauber um, Buttons sind größer und leichter zu treffen.',
+      ],
+    },
+  },
+  {
     version: '1.3.0',
     date: '2026-11-11',
     title: 'Duft-Suche & Löschen repariert',

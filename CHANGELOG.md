@@ -18,6 +18,26 @@ _Noch keine Änderungen._
 
 ---
 
+## [1.4.0] – 2026-11-11
+
+### Hinzugefügt
+- **Handy-Ansicht, Admin-Panel:** Auf schmalen Bildschirmen gibt es eine Kopfzeile mit ☰-Menü;
+  die Navigation klappt als Seitenleiste aus und schließt sich nach der Auswahl automatisch.
+- **Handy-Ansicht, Gäste- & Personal-Display:** Saunen stehen auf dem Handy untereinander
+  (Tablet: 2 Spalten, großer Monitor: wie bisher alle nebeneinander). Uhr, Countdown und
+  Fußzeile sind verkleinert.
+- **Home-Bildschirm:** Meta-Tags für „Zum Home-Bildschirm hinzufügen“ (iOS/Android), inkl.
+  Berücksichtigung von Notch/Home-Indikator.
+
+### Geändert
+- **Formulare:** Öffnen auf dem Handy als scrollbares Bottom-Sheet, Felder einspaltig,
+  Duft-Zeilen brechen um, Buttons in voller Breite.
+- **Tagesplan & Listen:** Datumsnavigation, Aufguss-Aktionen, Duft-/Sauna-/Mitarbeiterlisten
+  brechen auf kleinen Bildschirmen um; größere Tippflächen.
+- **Eingabefelder:** Auf dem Handy mindestens 16 px Schrift, damit iOS nicht automatisch hineinzoomt.
+
+---
+
 ## [1.3.0] – 2026-11-11
 
 ### Hinzugefügt

@@ -59,12 +59,12 @@ export default function GuestDisplay() {
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-stone-950 flex flex-col">
       {/* Header */}
-      <header className="px-8 py-6 flex items-center justify-between border-b border-gray-200 dark:border-stone-800">
-        <div className="flex flex-col">
-          <p className="text-steam-400 text-sm uppercase tracking-widest mb-1">
+      <header className="px-4 py-4 sm:px-8 sm:py-6 flex items-center justify-between gap-4 border-b border-gray-200 dark:border-stone-800">
+        <div className="flex flex-col min-w-0">
+          <p className="text-steam-400 text-xs sm:text-sm uppercase tracking-widest mb-1">
             {format(now, 'EEEE, dd. MMMM yyyy', { locale: de })}
           </p>
-          <h1 className="font-display text-3xl font-bold text-gray-900 dark:text-stone-100">
+          <h1 className="font-display text-xl sm:text-3xl font-bold text-gray-900 dark:text-stone-100">
             {event?.title ?? 'Aufguss-Programm'}
           </h1>
           {event?.notes && (
@@ -73,14 +73,14 @@ export default function GuestDisplay() {
         </div>
         {/* Aktuelle Uhrzeit */}
         <div className="text-right shrink-0">
-          <p className="font-mono text-5xl font-bold text-sauna-400 tabular-nums leading-none">
+          <p className="font-mono text-3xl sm:text-5xl font-bold text-sauna-400 tabular-nums leading-none">
             {format(now, 'HH:mm')}
           </p>
         </div>
       </header>
 
       {/* Inhalt */}
-      <main className="flex-1 p-6 pb-24">
+      <main className="flex-1 p-4 sm:p-6 pb-40 sm:pb-28">
         {isLoading ? (
           <div className="flex items-center justify-center h-64 text-gray-400 dark:text-stone-500">Lade Programm…</div>
         ) : visibleSchedule.length === 0 ? (
@@ -96,19 +96,19 @@ export default function GuestDisplay() {
               {startingSoon.map(entry => (
                 <div
                   key={entry.id}
-                  className="rounded-3xl border-2 border-sauna-500 bg-sauna-50 dark:bg-sauna-900/40 px-8 py-5 flex items-center gap-6 shadow-lg"
+                  className="rounded-3xl border-2 border-sauna-500 bg-sauna-50 dark:bg-sauna-900/40 p-4 sm:px-8 sm:py-5 flex flex-wrap sm:flex-nowrap items-center gap-4 sm:gap-6 shadow-lg"
                 >
-                  <div className="shrink-0 rounded-2xl bg-sauna-600 text-white px-6 py-3 text-center">
+                  <div className="shrink-0 rounded-2xl bg-sauna-600 text-white px-4 py-2 sm:px-6 sm:py-3 text-center">
                     <p className="text-xs uppercase tracking-widest opacity-90">Beginnt in</p>
-                    <p className="font-mono text-6xl font-bold tabular-nums leading-none mt-1">
+                    <p className="font-mono text-4xl sm:text-6xl font-bold tabular-nums leading-none mt-1">
                       {formatCountdown(countdowns.get(entry.id)!)}
                     </p>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sauna-600 dark:text-sauna-400 text-sm font-semibold uppercase tracking-widest">
+                    <p className="text-sauna-600 dark:text-sauna-400 text-xs sm:text-sm font-semibold uppercase tracking-widest">
                       Gleich geht's los – {entry.sauna_name}
                     </p>
-                    <p className="font-display text-3xl font-bold text-gray-900 dark:text-stone-100 truncate">
+                    <p className="font-display text-xl sm:text-3xl font-bold text-gray-900 dark:text-stone-100 truncate">
                       {entry.custom_name ?? entry.template_name ?? 'Aufguss'}
                     </p>
                     <p className="text-gray-500 dark:text-stone-400 mt-1">
@@ -123,7 +123,7 @@ export default function GuestDisplay() {
                     )}
                   </div>
                   {entry.staff_name && (
-                    <div className="shrink-0 flex flex-col items-center gap-2">
+                    <div className="shrink-0 flex sm:flex-col items-center gap-2 w-full sm:w-auto">
                       <Avatar name={entry.staff_name} url={entry.staff_avatar} size="lg" />
                       <p className="font-semibold text-gray-900 dark:text-stone-100">{entry.staff_name}</p>
                     </div>
@@ -133,7 +133,7 @@ export default function GuestDisplay() {
             </section>
           )}
 
-          <div className="grid gap-8" style={{ gridTemplateColumns: `repeat(${Object.keys(grouped).length}, 1fr)` }}>
+          <div className="guest-grid grid gap-6 sm:gap-8" style={{ ['--cols' as any]: Object.keys(grouped).length }}>
             {Object.entries(grouped).map(([saunaId, entries]) => (
               <div key={saunaId} className="flex flex-col gap-4">
                 <h2 className="text-steam-400 font-semibold uppercase tracking-widest text-sm text-center border-b border-gray-200 dark:border-stone-800 pb-3">
@@ -168,15 +168,15 @@ export default function GuestDisplay() {
         if (!next) return null;
         const nextSecs = countdowns.get(next.id);
         return (
-          <div className="fixed bottom-0 left-0 right-0 bg-sauna-900/90 backdrop-blur border-t border-sauna-700 px-8 py-4 flex items-center justify-between">
-            <div>
+          <div className="fixed bottom-0 left-0 right-0 bg-sauna-900/90 backdrop-blur border-t border-sauna-700 px-4 py-3 sm:px-8 sm:py-4 flex items-center justify-between gap-4" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
+            <div className="min-w-0">
               <span className="text-sauna-300 text-xs uppercase tracking-widest">
                 Nächster Aufguss
                 {nextSecs !== undefined && (
                   <span className="ml-2 font-mono font-bold text-white tabular-nums">· in {formatCountdown(nextSecs)}</span>
                 )}
               </span>
-              <p className="text-white font-display text-lg font-semibold">
+              <p className="text-white font-display text-base sm:text-lg font-semibold truncate">
                 {next.custom_name ?? next.template_name} — {next.start_time?.substring(0, 5)} Uhr
               </p>
               {next.scents.length > 0 && (
@@ -187,12 +187,12 @@ export default function GuestDisplay() {
                 </div>
               )}
             </div>
-            <div className="text-right">
+            <div className="text-right shrink-0">
               <span className="text-gray-300 text-sm">{next.sauna_name}</span>
               {next.staff_name && (
                 <div className="flex items-center gap-2 justify-end mt-1">
                   <Avatar name={next.staff_name} url={next.staff_avatar} size="sm" />
-                  <span className="text-gray-200 text-sm">{next.staff_name}</span>
+                  <span className="text-gray-200 text-sm hidden sm:inline">{next.staff_name}</span>
                 </div>
               )}
             </div>

@@ -74,22 +74,22 @@ export default function StaffDisplay() {
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-stone-950 flex flex-col">
-      <header className="px-8 py-5 flex items-center justify-between border-b border-gray-200 dark:border-stone-800">
-        <div>
+      <header className="px-4 py-4 sm:px-8 sm:py-5 flex items-center justify-between gap-4 border-b border-gray-200 dark:border-stone-800">
+        <div className="min-w-0">
           <p className="text-steam-400 text-xs uppercase tracking-widest">Personal-Ansicht</p>
-          <h1 className="font-display text-2xl font-bold text-gray-900 dark:text-stone-100">
+          <h1 className="font-display text-lg sm:text-2xl font-bold truncate text-gray-900 dark:text-stone-100">
             {event?.title ?? format(now, 'EEEE, dd. MMMM', { locale: de })}
           </h1>
         </div>
-        <div className="text-right">
-          <p className="text-gray-500 dark:text-stone-400 text-sm">{format(now, 'dd.MM.yyyy')}</p>
-          <p className="font-mono text-2xl font-bold text-sauna-400 tabular-nums">
+        <div className="text-right shrink-0">
+          <p className="text-gray-500 dark:text-stone-400 text-xs sm:text-sm">{format(now, 'dd.MM.yyyy')}</p>
+          <p className="font-mono text-xl sm:text-2xl font-bold text-sauna-400 tabular-nums">
             {format(now, 'HH:mm:ss')}
           </p>
         </div>
       </header>
 
-      <main className="flex-1 p-6 overflow-auto">
+      <main className="flex-1 p-4 sm:p-6 overflow-auto">
         {isLoading ? (
           <div className="text-gray-400 dark:text-stone-500 text-center py-20">Lade…</div>
         ) : !event || event.schedule.length === 0 ? (
@@ -105,7 +105,7 @@ export default function StaffDisplay() {
                     <div
                       key={entry.id}
                       className={cn(
-                        'rounded-2xl border-2 px-5 py-4 flex items-center gap-4 shadow-sm',
+                        'rounded-2xl border-2 p-3 sm:px-5 sm:py-4 flex flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-4 shadow-sm',
                         urgent
                           ? 'bg-red-50 border-red-500 dark:bg-red-950/40 dark:border-red-500'
                           : 'bg-amber-50 border-amber-400 dark:bg-amber-950/30 dark:border-amber-500'
@@ -116,7 +116,7 @@ export default function StaffDisplay() {
                         urgent ? 'bg-red-600 animate-pulse' : 'bg-amber-500'
                       )}>
                         <p className="text-[10px] uppercase tracking-widest opacity-90">Start in</p>
-                        <p className="font-mono text-3xl font-bold tabular-nums leading-none">{formatCountdown(secs)}</p>
+                        <p className="font-mono text-2xl sm:text-3xl font-bold tabular-nums leading-none">{formatCountdown(secs)}</p>
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className={cn(
@@ -150,7 +150,7 @@ export default function StaffDisplay() {
             {/* Timeline nach Mitarbeiter */}
             <section>
               <h2 className="text-steam-400 text-xs uppercase tracking-widest mb-4">Einteilung nach Mitarbeiter</h2>
-              <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(auto-fill, minmax(280px, 1fr))` }}>
+              <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(auto-fill, minmax(min(280px, 100%), 1fr))` }}>
                 {Object.entries(byStaff).map(([staffId, entries]) => {
                   const info = staffInfo[staffId];
                   const isActive = activeStaffIds.has(staffId);

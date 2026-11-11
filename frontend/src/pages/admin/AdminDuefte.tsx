@@ -55,8 +55,8 @@ export default function AdminDuefte() {
   }, {});
 
   return (
-    <div className="p-6 flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+    <div className="p-4 sm:p-6 flex flex-col gap-4 sm:gap-6">
+      <div className="page-header">
         <div>
           <h2 className="font-display text-2xl font-bold">Duft-Datenbank</h2>
           <p className="text-gray-400 dark:text-stone-500 text-sm mt-0.5">Standardmengen werden beim Hinzufügen zu Vorlagen automatisch vorausgefüllt</p>
@@ -103,14 +103,14 @@ export default function AdminDuefte() {
           <h3 className="text-steam-400 text-xs uppercase tracking-widest mb-3 capitalize">{cat}</h3>
           <div className="flex flex-col gap-2">
             {items.map(s => (
-              <div key={s.id} className="card p-4 flex items-center gap-4">
+              <div key={s.id} className="card p-3 sm:p-4 flex flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-4">
                 <div className="w-4 h-4 rounded-full shrink-0" style={{ backgroundColor: s.color ?? '#d97d1d' }} />
                 <div className="flex-1 min-w-0">
                   <p className="text-gray-900 dark:text-stone-100 font-medium">{s.name}</p>
                   {s.description && <p className="text-gray-400 dark:text-stone-500 text-sm truncate">{s.description}</p>}
                 </div>
                 {/* Dosierung */}
-                <div className="shrink-0 text-right">
+                <div className="order-last sm:order-none w-full sm:w-auto shrink-0 sm:text-right pl-7 sm:pl-0">
                   {s.default_dosage_ml ? (
                     <p className="text-sauna-400 font-mono font-semibold text-sm">
                       {Math.round(s.default_dosage_ml)} {s.dosage_unit}
@@ -119,7 +119,7 @@ export default function AdminDuefte() {
                     <p className="text-gray-400 dark:text-stone-600 text-xs">keine Standardmenge</p>
                   )}
                   {s.dosage_note && (
-                    <div className="flex gap-1 flex-wrap justify-end mt-1">
+                    <div className="flex gap-1 flex-wrap sm:justify-end mt-1">
                       {s.dosage_note.split(',').map(t => t.trim()).filter(Boolean).map(tag => (
                         <span key={tag} className="badge bg-gray-200 text-gray-600 dark:bg-stone-700 dark:text-stone-300 text-xs px-2 py-0.5">{tag}</span>
                       ))}
@@ -166,14 +166,14 @@ function ScentForm({ scent, onSubmit, onClose }: { scent: Scent | null; onSubmit
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-      <div className="card p-6 w-full max-w-lg flex flex-col gap-4">
+    <div className="modal-backdrop">
+      <div className="modal-panel max-w-lg">
         <h3 className="font-display text-xl font-bold">{scent ? 'Duft bearbeiten' : 'Neuer Duft'}</h3>
 
         <div><label className="label">Name *</label><input className="input" value={form.name} onChange={e => set('name', e.target.value)} placeholder="z.B. Eukalyptus" /></div>
         <div><label className="label">Beschreibung</label><textarea className="input" rows={2} value={form.description} onChange={e => set('description', e.target.value)} /></div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="label">Kategorie</label>
             <select className="input" value={form.category} onChange={e => set('category', e.target.value)}>
@@ -193,7 +193,7 @@ function ScentForm({ scent, onSubmit, onClose }: { scent: Scent | null; onSubmit
         <div className="bg-gray-100/70 dark:bg-stone-800/50 rounded-xl p-4 flex flex-col gap-3">
           <p className="text-gray-700 dark:text-stone-300 text-sm font-medium">Standarddosierung</p>
           <p className="text-gray-400 dark:text-stone-500 text-xs -mt-1">Wird beim Hinzufügen zu Vorlagen automatisch eingetragen</p>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="label">Menge</label>
               <input
@@ -231,7 +231,7 @@ function ScentForm({ scent, onSubmit, onClose }: { scent: Scent | null; onSubmit
           </div>
         </div>
 
-        <div className="flex gap-3 justify-end">
+        <div className="flex gap-3 justify-end [&>button]:flex-1 sm:[&>button]:flex-none">
           <button onClick={onClose} className="btn-secondary">Abbrechen</button>
           <button onClick={() => onSubmit({ ...form, default_dosage_ml: form.default_dosage_ml ? Math.round(parseFloat(form.default_dosage_ml)) : null })} className="btn-primary">Speichern</button>
         </div>

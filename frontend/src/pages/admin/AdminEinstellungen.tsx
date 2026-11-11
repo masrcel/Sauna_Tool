@@ -62,7 +62,7 @@ export default function AdminEinstellungen() {
   const shades = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900];
 
   return (
-    <div className="p-6 flex flex-col gap-8 max-w-2xl">
+    <div className="p-4 sm:p-6 flex flex-col gap-6 sm:gap-8 max-w-2xl">
       <div>
         <h2 className="font-display text-2xl font-bold">Einstellungen</h2>
         <p className="text-gray-500 dark:text-stone-500 text-sm mt-1">Corporate Design & App-Konfiguration</p>
@@ -198,7 +198,7 @@ export default function AdminEinstellungen() {
       <button
         onClick={() => saveMutation.mutate(form)}
         disabled={saveMutation.isPending}
-        className="btn-primary flex items-center gap-2 self-start disabled:opacity-50"
+        className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto sm:self-start disabled:opacity-50"
       >
         <Save className="w-4 h-4" />
         {saveMutation.isPending ? 'Wird gespeichert…' : 'Einstellungen speichern'}

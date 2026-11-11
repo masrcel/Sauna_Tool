@@ -43,8 +43,8 @@ export default function AdminIdeen() {
   });
 
   return (
-    <div className="p-6 flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+    <div className="p-4 sm:p-6 flex flex-col gap-4 sm:gap-6">
+      <div className="page-header">
         <h2 className="font-display text-2xl font-bold">Ideen-Datenbank</h2>
         <button onClick={() => setShowForm(true)} className="btn-primary flex items-center gap-2"><Plus className="w-4 h-4" /> Neue Idee</button>
       </div>
@@ -55,7 +55,7 @@ export default function AdminIdeen() {
           <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400 dark:text-stone-500" />
           <input className="input pl-9" placeholder="Suchen…" value={search} onChange={e => setSearch(e.target.value)} />
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <button onClick={() => setCategory('')} className={cn('badge px-3 py-1.5 text-sm', !category ? 'bg-sauna-700 text-white' : 'bg-gray-100 text-gray-600 dark:bg-stone-800 dark:text-stone-300')}>Alle</button>
           {CATEGORIES.map(c => (
             <button key={c} onClick={() => setCategory(category === c ? '' : c)} className={cn('badge px-3 py-1.5 text-sm', category === c ? 'bg-sauna-700 text-white' : 'bg-gray-100 text-gray-600 dark:bg-stone-800 dark:text-stone-300')}>
@@ -69,10 +69,10 @@ export default function AdminIdeen() {
       <div className="grid grid-cols-1 gap-4">
         {ideas.length === 0 && <p className="text-gray-400 dark:text-stone-500 text-center py-12">Keine Ideen gefunden.</p>}
         {ideas.map(idea => (
-          <div key={idea.id} className="card p-5 flex flex-col gap-3">
+          <div key={idea.id} className="card p-4 sm:p-5 flex flex-col gap-3">
             <div className="flex items-start justify-between gap-3">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2 mb-1">
                   <span className={cn('badge text-xs', categoryColor(idea.category))}>{categoryLabel(idea.category)}</span>
                   {idea.tags?.map(tag => (
                     <span key={tag} className="badge bg-gray-100 text-gray-500 dark:bg-stone-800 dark:text-stone-400 text-xs">#{tag}</span>
@@ -81,8 +81,8 @@ export default function AdminIdeen() {
                 <h3 className="font-display text-lg font-semibold text-gray-900 dark:text-stone-100">{idea.title}</h3>
               </div>
               <div className="flex gap-2 shrink-0">
-                <button onClick={() => setEditIdea(idea)} className="text-gray-400 hover:text-gray-700 dark:text-stone-500 dark:hover:text-stone-200"><Pencil className="w-4 h-4" /></button>
-                <button onClick={() => { if (confirm('Idee löschen?')) deleteMutation.mutate(idea.id); }} className="text-gray-400 hover:text-red-500 dark:text-stone-500 dark:hover:text-red-400"><Trash2 className="w-4 h-4" /></button>
+                <button onClick={() => setEditIdea(idea)} className="p-1 text-gray-400 hover:text-gray-700 dark:text-stone-500 dark:hover:text-stone-200"><Pencil className="w-4 h-4" /></button>
+                <button onClick={() => { if (confirm('Idee löschen?')) deleteMutation.mutate(idea.id); }} className="p-1 text-gray-400 hover:text-red-500 dark:text-stone-500 dark:hover:text-red-400"><Trash2 className="w-4 h-4" /></button>
               </div>
             </div>
 
@@ -157,8 +157,8 @@ function IdeaForm({ idea, onSubmit, onClose }: { idea: Idea | null; onSubmit: (d
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-      <div className="card p-6 w-full max-w-lg flex flex-col gap-4">
+    <div className="modal-backdrop">
+      <div className="modal-panel max-w-lg">
         <h3 className="font-display text-xl font-bold">{idea ? 'Idee bearbeiten' : 'Neue Idee'}</h3>
         <div>
           <label className="label">Titel *</label>
@@ -178,7 +178,7 @@ function IdeaForm({ idea, onSubmit, onClose }: { idea: Idea | null; onSubmit: (d
           <label className="label">Tags (kommagetrennt)</label>
           <input className="input" value={form.tags} onChange={e => set('tags', e.target.value)} placeholder="z.B. sommer, frisch, zitrus" />
         </div>
-        <div className="flex gap-3 justify-end">
+        <div className="flex gap-3 justify-end [&>button]:flex-1 sm:[&>button]:flex-none">
           <button onClick={onClose} className="btn-secondary">Abbrechen</button>
           <button onClick={() => onSubmit({ ...form, tags: form.tags.split(',').map(t => t.trim()).filter(Boolean) })} className="btn-primary">Speichern</button>
         </div>
