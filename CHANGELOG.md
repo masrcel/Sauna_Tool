@@ -12,6 +12,26 @@ Versionierung nach [Semantic Versioning](https://semver.org/lang/de/):
 
 ---
 
+## [1.7.0] – 2026-11-12
+
+> **Update:** `git pull` und `docker compose up -d --build` genügen. Die neue Tabelle wird
+> automatisch angelegt. Backups landen im neuen Ordner `./backups` neben `docker-compose.yml`.
+> Optional in der `.env`: `BACKUP_HOUR`, `BACKUP_KEEP_DAYS`, `AUDIT_LOG_DAYS` (siehe `.env.example`).
+
+### Neu
+- **Protokoll** (nur Admins): Jede Änderung wird mit Mitarbeiter, Zeitpunkt und IP festgehalten –
+  bei Bearbeitungen mit den Werten vorher → nachher, bei Löschungen mit dem gelöschten Datensatz.
+  Außerdem Anmeldungen, Abmeldungen und fehlgeschlagene Anmeldeversuche. Filter nach Mitarbeiter,
+  Bereich, Aktion, Zeitraum und Freitext; CSV-Export (Excel). Tabelle `audit_log`, zentral erfasst
+  über `backend/src/middleware/audit.ts`. Passwörter werden nie gespeichert.
+- **Backup** (nur Admins): tägliches automatisches Backup (`BACKUP_HOUR`, Standard 3 Uhr,
+  Aufbewahrung `BACKUP_KEEP_DAYS`, Standard 14 Tage), Backup auf Knopfdruck, Download,
+  Wiederherstellung vom Server oder aus einer hochgeladenen Datei. Enthält alle Daten, Profilbilder
+  und das Protokoll. Vor jeder Wiederherstellung wird automatisch eine Sicherheitskopie erstellt;
+  das Protokoll bleibt bei einer Wiederherstellung erhalten, alle Sitzungen werden beendet.
+
+---
+
 ## [1.6.2] – 2026-11-12
 
 > **Update:** `git pull` und `docker compose up -d --build` genügen. Bei einer **Neuinstallation**

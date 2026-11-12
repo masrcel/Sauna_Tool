@@ -13,6 +13,8 @@ import AdminVorlagen from './pages/admin/AdminVorlagen';
 import AdminTagesvorlagen from './pages/admin/AdminTagesvorlagen';
 import AdminEinstellungen from './pages/admin/AdminEinstellungen';
 import AdminVersionen from './pages/admin/AdminVersionen';
+import AdminProtokoll from './pages/admin/AdminProtokoll';
+import AdminBackup from './pages/admin/AdminBackup';
 import { useAuth } from './hooks/useAuth';
 import { applyTheme, applyThemeMode, DEFAULT_PRIMARY } from './lib/theme';
 import { api } from './lib/api';
@@ -66,6 +68,8 @@ export default function App() {
           <Route path="vorlagen" element={<AdminVorlagen />} />
           <Route path="tagesvorlagen" element={<AdminTagesvorlagen />} />
           <Route path="einstellungen" element={<AdminOnlyRoute><AdminEinstellungen /></AdminOnlyRoute>} />
+          <Route path="protokoll" element={<AdminOnlyRoute><AdminProtokoll /></AdminOnlyRoute>} />
+          <Route path="backup" element={<AdminOnlyRoute><AdminBackup /></AdminOnlyRoute>} />
           <Route path="versionen" element={<AdminVersionen />} />
         </Route>
       </Routes>

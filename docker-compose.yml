@@ -29,8 +29,15 @@ services:
       PORT: 3001
       FRONTEND_URL: https://${DOMAIN}
       TZ: ${TZ:-Europe/Berlin}
+      # Backups: Uhrzeit des täglichen Backups (-1 = aus), Aufbewahrung in Tagen
+      BACKUP_HOUR: ${BACKUP_HOUR:-3}
+      BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:-14}
+      # Protokoll: Einträge nach so vielen Tagen löschen (0 = nie)
+      AUDIT_LOG_DAYS: ${AUDIT_LOG_DAYS:-365}
     volumes:
       - uploads:/app/backend/uploads
+      # Backups zusätzlich direkt auf dem Server unter ./backups (einfach wegkopierbar)
+      - ./backups:/app/backend/backups
     # kein Port nach außen – erreichbar nur über nginx (/api, /uploads)
     depends_on:
       - db

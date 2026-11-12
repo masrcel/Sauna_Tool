@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../hooks/useAuth';
 import Avatar from '../../components/Avatar';
 import {
-  CalendarDays, CalendarRange, Lightbulb, Users, Thermometer, Droplets, BookMarked, LogOut, Monitor, Settings, History, Menu, X
+  CalendarDays, CalendarRange, Lightbulb, Users, Thermometer, Droplets, BookMarked, LogOut, Monitor, Settings, History, Menu, X, ScrollText, DatabaseBackup
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { api } from '../../lib/api';
@@ -20,6 +20,8 @@ const nav = [
   { to: 'saunen',      label: 'Saunen',      icon: Thermometer, adminOnly: true },
   { to: 'duefte',      label: 'Düfte',       icon: Droplets },
   { to: 'einstellungen', label: 'Einstellungen', icon: Settings, adminOnly: true },
+  { to: 'protokoll',   label: 'Protokoll',   icon: ScrollText, adminOnly: true },
+  { to: 'backup',      label: 'Backup',      icon: DatabaseBackup, adminOnly: true },
   { to: 'versionen',   label: 'Versionen',   icon: History },
 ];
 

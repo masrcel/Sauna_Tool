@@ -5,7 +5,7 @@ Digitales Aufguss-Planungssystem für Saunen. Drei Ansichten:
 - **`/personal`** — Personal-Display (öffentlich, kein Login)
 - **`/admin`** — Admin-Panel (Login erforderlich, Rollen siehe [Rollen & Berechtigungen](#rollen--berechtigungen))
 
-Aktuelle Version: **1.5.0** · Optimiert für Monitor, Tablet und Handy.
+Aktuelle Version: **1.7.0** · Optimiert für Monitor, Tablet und Handy.
 
 Live: **https://demo.sauna-aufgussplan.de**
 
@@ -51,6 +51,31 @@ docker compose up -d --build
 - Datenbank (5432) und Backend (3001) sind **nicht** von außen erreichbar, nur über nginx.
 - `.env` nie ins Git einchecken (steht in `.gitignore`).
 
+### Backup & Wiederherstellung
+- **Automatisch:** jede Nacht ab `BACKUP_HOUR` Uhr (Standard 3), aufbewahrt `BACKUP_KEEP_DAYS` Tage
+  (Standard 14). War der Server zur Uhrzeit aus, wird das Backup beim nächsten Start nachgeholt.
+- **Manuell:** Admin-Panel → **Backup** → „Backup jetzt erstellen“. Manuelle Backups bleiben, bis
+  sie gelöscht werden.
+- Ein Backup (`.json.gz`) enthält alle Daten, die Profilbilder und das Protokoll.
+- Die Dateien liegen auf dem Server im Ordner **`./backups`** (neben `docker-compose.yml`).
+  **Wichtig:** Regelmäßig eine Kopie außerhalb des Servers ablegen (Download im Admin-Panel oder
+  z. B. `rsync`/`scp` des Ordners) – fällt der Server aus, sind die Backups dort sonst auch weg.
+- **Wiederherstellen:** Admin-Panel → Backup → bei einem Backup „Wiederherstellen“ oder eine Datei
+  hochladen. Vorher wird automatisch eine Sicherheitskopie (`…-vor-wiederherstellung`) angelegt.
+  Alle Daten werden ersetzt, das **Protokoll bleibt erhalten**, alle Mitarbeiter werden abgemeldet.
+- Serverumzug: Backup herunterladen → neuen Server installieren → als Admin anmelden → Datei hochladen.
+
+### Protokoll
+- Admin-Panel → **Protokoll**: jede Änderung mit Mitarbeiter, Zeitpunkt, IP und Details
+  (bei Bearbeitungen vorher → nachher, bei Löschungen der gelöschte Datensatz). Außerdem
+  Anmeldungen, Abmeldungen, fehlgeschlagene Anmeldeversuche, Backups und Wiederherstellungen.
+- Passwörter werden nie protokolliert (nur „geändert“).
+- Einträge werden nach `AUDIT_LOG_DAYS` Tagen gelöscht (Standard 365, `0` = nie).
+  **Datenschutz:** Das Protokoll enthält personenbezogene Daten der Mitarbeiter – die Mitarbeiter
+  sollten darüber informiert sein; ggf. Betriebsrat einbeziehen.
+- Entwickler: Neue Routen in `RULES` in [backend/src/middleware/audit.ts](backend/src/middleware/audit.ts)
+  eintragen, damit der Eintrag gut lesbar ist (sonst allgemeiner Eintrag mit Methode + Pfad).
+
 ### Logs & Fehlersuche
 ```bash
 docker compose ps
@@ -72,6 +97,8 @@ docker compose exec frontend env | grep DOMAIN    # muss die echte Domain zeigen
 | **Saunen** | Saunen mit Namen verwalten |
 | **Düfte** | 40+ Düfte mit Farbe und Kategorie, Suche und Kategorie-Filter |
 | **Einstellungen** | App-Name, Logo, Primärfarbe, Hell/Dunkel/System |
+| **Protokoll** | Wer hat wann was geändert (inkl. vorher/nachher, Anmeldungen, Fehlversuche), Filter + CSV-Export |
+| **Backup** | Tägliches automatisches Backup, manuelles Backup, Download, Wiederherstellung |
 | **Versionen** | Änderungshistorie direkt im Admin-Panel |
 
 ---
@@ -111,6 +138,8 @@ Die Displays (`/` und `/personal`) sind ohne Login erreichbar und zeigen nur Dat
 | | Anlegen, bearbeiten, Rolle/Passwort ändern, deaktivieren | – | – | ✅ |
 | **Einstellungen** | Lesen (Name, Farbe, Logo) | ✅ | ✅ | ✅ |
 | | Ändern | – | – | ✅ |
+| **Protokoll** | Ansehen, exportieren | – | – | ✅ |
+| **Backup** | Erstellen, herunterladen, wiederherstellen, löschen | – | – | ✅ |
 | **Versionen** | Ansehen | – | ✅ | ✅ |
 
 ### Hinweise

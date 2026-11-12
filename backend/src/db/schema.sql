@@ -178,6 +178,24 @@ CREATE TABLE IF NOT EXISTS day_template_entry_scents (
   sort_order INT NOT NULL DEFAULT 0
 );
 
+-- Protokoll: wer hat wann was im System gemacht.
+-- Bewusst OHNE Fremdschlüssel auf users: Der Name wird als Kopie gespeichert, und eine
+-- Backup-Wiederherstellung (TRUNCATE users) lässt das Protokoll unangetastet.
+CREATE TABLE IF NOT EXISTS audit_log (
+  id BIGSERIAL PRIMARY KEY,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  user_id UUID,
+  user_name VARCHAR(255),
+  action VARCHAR(30) NOT NULL, -- create | update | delete | login | login_failed | logout | backup | restore | download
+  entity VARCHAR(50),          -- z. B. 'Aufguss', 'Sauna', 'Mitarbeiter'
+  entity_id TEXT,
+  summary TEXT NOT NULL,       -- lesbarer Satz, z. B. Sauna „Finnisch“ geändert
+  details JSONB,               -- Änderungen (vorher/nachher), gelöschte Daten usw.
+  ip VARCHAR(64)
+);
+CREATE INDEX IF NOT EXISTS audit_log_created_idx ON audit_log (created_at DESC);
+CREATE INDEX IF NOT EXISTS audit_log_user_idx ON audit_log (user_id, created_at DESC);
+
 -- Seed-Daten: Standard-Admin
 INSERT INTO users (name, email, password_hash, role) VALUES
   ('Admin', 'admin@sauna.local', '$2a$10$placeholder', 'admin');

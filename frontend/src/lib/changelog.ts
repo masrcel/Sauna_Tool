@@ -23,6 +23,28 @@ export const CHANGE_TYPE_LABELS: Record<ChangeType, string> = {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '1.7.0',
+    date: '2026-11-12',
+    title: 'Protokoll & Backup',
+    note: 'Neue Menüpunkte „Protokoll“ und „Backup“ – nur für Admins sichtbar.',
+    changes: {
+      added: [
+        'Protokoll: Zeigt, welcher Mitarbeiter wann was geändert hat – z. B. Aufgüsse, Vorlagen, Düfte, Saunen, Mitarbeiter und Einstellungen.',
+        'Protokoll: Bei Änderungen werden die Werte vorher → nachher angezeigt, bei Löschungen der gelöschte Eintrag. So lässt sich auch nachträglich nachvollziehen, was vorher dort stand.',
+        'Protokoll: Anmeldungen, Abmeldungen und fehlgeschlagene Anmeldeversuche werden ebenfalls erfasst.',
+        'Protokoll: Filter nach Mitarbeiter, Bereich, Aktion, Zeitraum und Freitext sowie Export als CSV-Datei (für Excel).',
+        'Backup: Jede Nacht wird automatisch eine Datensicherung erstellt und 14 Tage aufbewahrt. Zusätzlich jederzeit per Knopfdruck.',
+        'Backup: Enthält alle Daten (Pläne, Vorlagen, Düfte, Ideen, Mitarbeiter, Einstellungen), die Profilbilder und das Protokoll.',
+        'Backup: Sicherungen lassen sich herunterladen und wiederherstellen – direkt vom Server oder aus einer hochgeladenen Datei (z. B. nach einem Serverumzug).',
+      ],
+      security: [
+        'Vor jeder Wiederherstellung wird automatisch eine Sicherheitskopie des aktuellen Stands angelegt. Das Protokoll bleibt dabei vollständig erhalten.',
+        'Nach einer Wiederherstellung werden alle Mitarbeiter abgemeldet und müssen sich neu anmelden.',
+        'Passwörter werden nie im Protokoll gespeichert, dort steht nur „geändert“.',
+      ],
+    },
+  },
+  {
     version: '1.6.2',
     date: '2026-11-12',
     title: 'Stärkere Passwörter & Datenschutz',
