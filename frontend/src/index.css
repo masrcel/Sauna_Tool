@@ -88,3 +88,7 @@
 @media (min-width: 1280px) {
   .guest-grid { grid-template-columns: repeat(var(--cols, 1), minmax(0, 1fr)); }
 }
+
+/* Horizontale Leisten (z. B. Tagesauswahl im Gäste-Programm) ohne sichtbaren Scrollbalken */
+.scrollbar-none { scrollbar-width: none; }
+.scrollbar-none::-webkit-scrollbar { display: none; }

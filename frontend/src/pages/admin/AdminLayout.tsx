@@ -132,6 +132,9 @@ export default function AdminLayout() {
           <a href="/personal" target="_blank" className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-stone-400 dark:hover:bg-stone-800 dark:hover:text-stone-100 transition-colors">
             <Monitor className="w-4 h-4" /> Personal-Display
           </a>
+          <a href="/programm" target="_blank" className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-stone-400 dark:hover:bg-stone-800 dark:hover:text-stone-100 transition-colors">
+            <CalendarDays className="w-4 h-4" /> Gäste-Programm
+          </a>
         </div>
 
         {/* User + Logout */}

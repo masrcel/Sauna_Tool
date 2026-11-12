@@ -3,9 +3,10 @@
 Digitales Aufguss-Planungssystem für Saunen. Drei Ansichten:
 - **`/`** — Gäste-Display (öffentlich, kein Login)
 - **`/personal`** — Personal-Display (öffentlich, kein Login)
+- **`/programm`** — Gäste-Programm der nächsten 14 Tage, Tag wählbar (öffentlich, kein Login)
 - **`/admin`** — Admin-Panel (Login erforderlich, Rollen siehe [Rollen & Berechtigungen](#rollen--berechtigungen))
 
-Aktuelle Version: **1.8.0** · Optimiert für Monitor, Tablet und Handy.
+Aktuelle Version: **1.9.0** · Optimiert für Monitor, Tablet und Handy.
 
 Live: **https://demo.sauna-aufgussplan.de**
 
@@ -113,7 +114,7 @@ Es gibt zwei Rollen. Die Rolle wird unter **Mitarbeiter** beim Anlegen/Bearbeite
 | **Admin** | `admin` | Volle Rechte inkl. Mitarbeiter-, Sauna- und App-Verwaltung |
 | **Personal** | `staff` | Tägliche Arbeit: Aufgüsse planen, Vorlagen, Ideen, Düfte pflegen |
 
-Die Displays (`/` und `/personal`) sind ohne Login erreichbar und zeigen nur Daten an.
+Die Displays (`/`, `/personal` und `/programm`) sind ohne Login erreichbar und zeigen nur Daten an.
 
 ### Rechte-Übersicht
 
@@ -168,6 +169,7 @@ Die Displays (`/` und `/personal`) sind ohne Login erreichbar und zeigen nur Dat
 |---|---|---|
 | Gäste-Display | `https://[DOMAIN]/` | Auto-Refresh alle 60s |
 | Personal-Display | `https://[DOMAIN]/personal` | Auto-Refresh alle 30s |
+| Gäste-Programm | `https://[DOMAIN]/programm` | Nächste 14 Tage, Tag wählbar (`?tag=JJJJ-MM-TT`) |
 
 ---
 

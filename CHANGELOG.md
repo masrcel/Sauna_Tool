@@ -12,6 +12,20 @@ Versionierung nach [Semantic Versioning](https://semver.org/lang/de/):
 
 ---
 
+## [1.9.0] – 2026-11-12
+
+> **Update:** `git pull` und `docker compose up -d --build` genügen. Keine Änderungen an Datenbank oder `.env`.
+
+### Neu
+- **Gäste-Programm** unter `/programm`: öffentliche Seite (ohne Anmeldung), auf der Gäste das
+  Aufguss-Programm der nächsten 14 Tage durchblättern können – ideal als Link auf der Website oder
+  per QR-Code. Tage mit Programm sind markiert; der gewählte Tag steht in der URL (`?tag=JJJJ-MM-TT`)
+  und lässt sich so direkt teilen. Das Gäste-Display (`/`) zeigt weiterhin immer nur den aktuellen Tag.
+  Neuer öffentlicher Endpunkt `GET /api/events/public/overview` (max. 62 Tage, nur Datum/Titel/Anzahl).
+  Link im Admin-Menü unter „Displays öffnen“.
+
+---
+
 ## [1.8.0] – 2026-11-12
 
 > **Update:** `git pull` und `docker compose up -d --build` genügen. Keine Änderungen an Datenbank oder `.env`.

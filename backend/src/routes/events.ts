@@ -105,6 +105,29 @@ router.get('/', requireAuth, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// Öffentliche Übersicht für das Gäste-Programm (/programm): welche Tage haben ein Programm?
+// Ohne Anmeldung, daher Zeitraum auf 62 Tage begrenzt und nur Datum, Titel und Anzahl.
+const MAX_PUBLIC_RANGE_DAYS = 62;
+router.get('/public/overview', async (req, res, next) => {
+  try {
+    const { from, to } = parse(rangeQuerySchema, req.query);
+    const days = (Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000;
+    if (days < 0 || days > MAX_PUBLIC_RANGE_DAYS) {
+      res.status(400).json({ error: `Zeitraum darf höchstens ${MAX_PUBLIC_RANGE_DAYS} Tage umfassen.` });
+      return;
+    }
+    const rows = await query(`
+      SELECT TO_CHAR(e.event_date, 'YYYY-MM-DD') as date, e.title, COUNT(s.id)::int as count
+      FROM events e
+      JOIN aufguss_schedule s ON s.event_id = e.id AND s.status != 'abgesagt'
+      WHERE e.event_date BETWEEN $1 AND $2
+      GROUP BY e.event_date, e.title
+      ORDER BY e.event_date
+    `, [from, to]);
+    res.json(rows);
+  } catch (err) { next(err); }
+});
+
 // Tages-Event abrufen oder anlegen
 router.get('/:date', async (req, res, next) => {
   try {

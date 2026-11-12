@@ -23,6 +23,19 @@ export const CHANGE_TYPE_LABELS: Record<ChangeType, string> = {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '1.9.0',
+    date: '2026-11-12',
+    title: 'Gäste-Programm',
+    note: 'Neuer Link „Gäste-Programm“ im Menü unter „Displays öffnen“.',
+    changes: {
+      added: [
+        'Gäste-Programm unter /programm: Gäste sehen ohne Anmeldung das Aufguss-Programm der nächsten 14 Tage und können zwischen den Tagen wechseln.',
+        'Tage mit Programm sind in der Tagesleiste markiert. Der Link zu einem bestimmten Tag lässt sich teilen, z. B. auf der Website oder als QR-Code.',
+        'Das Gäste-Display bleibt unverändert und zeigt immer nur den aktuellen Tag.',
+      ],
+    },
+  },
+  {
     version: '1.8.0',
     date: '2026-11-12',
     title: 'Tag als PDF teilen',

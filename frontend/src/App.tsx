@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import GuestDisplay from './pages/GuestDisplay';
 import StaffDisplay from './pages/StaffDisplay';
+import GuestProgram from './pages/GuestProgram';
 import AdminLogin from './pages/AdminLogin';
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminPlan from './pages/admin/AdminPlan';
@@ -55,6 +56,7 @@ export default function App() {
         {/* Öffentliche Displays */}
         <Route path="/" element={<GuestDisplay />} />
         <Route path="/personal" element={<StaffDisplay />} />
+        <Route path="/programm" element={<GuestProgram />} />
 
         {/* Admin */}
         <Route path="/admin/login" element={<AdminLogin />} />
