@@ -23,6 +23,20 @@ export const CHANGE_TYPE_LABELS: Record<ChangeType, string> = {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '1.8.0',
+    date: '2026-11-12',
+    title: 'Tag als PDF teilen',
+    note: 'Im Plan gibt es den neuen Knopf „Als PDF / teilen“.',
+    changes: {
+      added: [
+        'Einen geplanten Tag als PDF exportieren. Auf dem Handy öffnet „Teilen“ direkt das Teilen-Menü, z. B. für WhatsApp.',
+        'Vor dem Export wählbar: Aufgießer anzeigen, Dosierung der Düfte anzeigen, abgesagte Aufgüsse ausblenden. Die Auswahl wird gemerkt.',
+        'Plan als formatierten Text direkt per WhatsApp verschicken.',
+        '„Für KI kopieren“: kopiert den Plan mit einer fertigen Anweisung. In ChatGPT, Claude o. Ä. einfügen, dann wird daraus eine Grafik für den WhatsApp-Status oder ein Aushang.',
+      ],
+    },
+  },
+  {
     version: '1.7.0',
     date: '2026-11-12',
     title: 'Protokoll & Backup',

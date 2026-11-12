@@ -12,6 +12,19 @@ Versionierung nach [Semantic Versioning](https://semver.org/lang/de/):
 
 ---
 
+## [1.8.0] – 2026-11-12
+
+> **Update:** `git pull` und `docker compose up -d --build` genügen. Keine Änderungen an Datenbank oder `.env`.
+
+### Neu
+- **Tag als PDF / teilen** (Admin → Plan): Erzeugt im Browser ein A4-PDF des Tages (Kopfzeile in
+  Markenfarbe, App-Name aus den Einstellungen). Auf dem Handy wird das PDF per Web Share API
+  geteilt (z. B. WhatsApp), am PC heruntergeladen. Optionen: Aufgießer, Dosierung, abgesagte
+  Aufgüsse. Zusätzlich Versand als formatierter WhatsApp-Text und „Für KI kopieren“ (Plan + Prompt
+  für eine grafische Aufbereitung). Neue Abhängigkeit `jspdf` (wird erst beim Öffnen des Dialogs geladen).
+
+---
+
 ## [1.7.0] – 2026-11-12
 
 > **Update:** `git pull` und `docker compose up -d --build` genügen. Die neue Tabelle wird

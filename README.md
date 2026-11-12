@@ -5,7 +5,7 @@ Digitales Aufguss-Planungssystem für Saunen. Drei Ansichten:
 - **`/personal`** — Personal-Display (öffentlich, kein Login)
 - **`/admin`** — Admin-Panel (Login erforderlich, Rollen siehe [Rollen & Berechtigungen](#rollen--berechtigungen))
 
-Aktuelle Version: **1.7.0** · Optimiert für Monitor, Tablet und Handy.
+Aktuelle Version: **1.8.0** · Optimiert für Monitor, Tablet und Handy.
 
 Live: **https://demo.sauna-aufgussplan.de**
 

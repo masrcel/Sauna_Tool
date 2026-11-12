@@ -9,7 +9,8 @@ import { DayEvent, AufgussTemplate, User, Sauna, ScheduleEntry } from '../../typ
 import AufgussCard from '../../components/AufgussCard';
 import ScheduleForm from '../../components/ScheduleForm';
 import { ApplyDayTemplateModal, SaveDayTemplateModal } from '../../components/DayTemplateModals';
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Plus, Trash2, Pencil, CalendarPlus, Save, UserPlus } from 'lucide-react';
+import DayExportModal from '../../components/DayExportModal';
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Plus, Trash2, Pencil, CalendarPlus, Save, UserPlus, FileDown } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 export default function AdminPlan() {
@@ -26,6 +27,7 @@ export default function AdminPlan() {
   const [editEntry, setEditEntry] = useState<ScheduleEntry | null>(null);
   const [showApply, setShowApply] = useState(false);
   const [showSaveTemplate, setShowSaveTemplate] = useState(false);
+  const [showExport, setShowExport] = useState(false);
   const qc = useQueryClient();
   const { user } = useAuth();
   const dateStr = format(date, 'yyyy-MM-dd');
@@ -177,6 +179,11 @@ export default function AdminPlan() {
         {/* Aktionen */}
         <div className="flex flex-col sm:flex-row sm:justify-end gap-2">
           {event && event.schedule.length > 0 && (
+            <button onClick={() => setShowExport(true)} className="btn-secondary flex items-center justify-center gap-2 text-sm">
+              <FileDown className="w-4 h-4" /> Als PDF / teilen
+            </button>
+          )}
+          {event && event.schedule.length > 0 && (
             <button onClick={() => setShowSaveTemplate(true)} className="btn-secondary flex items-center justify-center gap-2 text-sm">
               <Save className="w-4 h-4" /> Als Tagesvorlage speichern
             </button>
@@ -265,6 +272,10 @@ export default function AdminPlan() {
 
       {showSaveTemplate && (
         <SaveDayTemplateModal date={date} onClose={() => setShowSaveTemplate(false)} />
+      )}
+
+      {showExport && event && (
+        <DayExportModal date={date} event={event} onClose={() => setShowExport(false)} />
       )}
     </div>
   );
